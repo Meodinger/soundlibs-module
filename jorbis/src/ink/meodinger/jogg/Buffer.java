@@ -10,7 +10,9 @@ public class Buffer {
 
     private static final int BUFFER_INCREMENT = 256;
 
-    // For example: MASK[7] = 0x7f -> 0b01111111
+    /**
+     * For example: MASK[7] = 0x7f -> 0b01111111
+     */
     private static final int[] MASK = { 0x00000000,
             0x00000001, 0x00000003, 0x00000007, 0x0000000f,
             0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff,
@@ -41,7 +43,7 @@ public class Buffer {
         if (state != expected) throw new IllegalStateException("Buffer state should be" + expected);
     }
 
-    byte[] buffer = null;
+    public byte[] buffer = null;
 
     private int pointer = 0;
     private int endByte = 0;
@@ -220,7 +222,7 @@ public class Buffer {
     }
 
     /**
-     * not clear its function
+     * ? not clear
      * @param bits length of bits to read
      * @return bits as Int
      */
@@ -298,7 +300,7 @@ public class Buffer {
     /**
      * reset buffer
      */
-    void reset() {
+    public void reset() {
         buffer[0] = 0x0;
 
         pointer = 0;
@@ -313,17 +315,15 @@ public class Buffer {
      */
     public int look(int bits) {
         int mask = MASK[bits];
-        int ret;
 
         bits += endBit;
 
         if (endByte + 4 >= storage) {
-            ret = -1;
-            if (endByte + (bits - 1) / 8 >= storage) return ret;
+            if (endByte + (bits - 1) / 8 >= storage) return -1;
         }
 
         // Look current byte
-        ret = (buffer[pointer] & 0xff) >>> endBit;
+        int ret = (buffer[pointer] & 0xff) >>> endBit;
         // Look more bytes if needed
         if (bits > 8) {
             ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
@@ -337,7 +337,7 @@ public class Buffer {
                 }
             }
         }
-        // Use mask to take off invalid bits
+        // Use mask to get rid of invalid bits
         return ret & mask;
     }
 
@@ -390,17 +390,4 @@ public class Buffer {
         return (endByte * 8 + endBit);
     }
 
-    // ----- static method ----- //
-
-    /**
-     * log2(v) as int + 1
-     */
-    public static int ilog(int v) {
-        int ret = 0;
-        while (v > 0) {
-            ret++;
-            v >>>= 1;
-        }
-        return ret;
-    }
 }
