@@ -46,11 +46,9 @@ public class Packet {
 
     /**
      * Sequence number for decode
-     *
-     * The framing knows where there's a hole in the data,
-     * but we need coupling so that the codec (which is
-     * in a separate abstraction layer) also knows about
-     * the gap
+     * The framing knows where there's a hole in the data, but we need coupling
+     * so that the codec (which is in a separate abstraction layer) also knows
+     * about the gap
      */
     public long packetNo = 0;
 }

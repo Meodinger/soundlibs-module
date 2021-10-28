@@ -1,7 +1,5 @@
 package ink.meodinger.jogg;
 
-import java.util.function.Supplier;
-
 /**
  * Author: Meodinger
  * Date: 2021/10/27
@@ -47,15 +45,7 @@ public class SyncState {
     // ----- ----- //
 
     /**
-     * Default constructor, init when constructed.
-     */
-    public SyncState() {
-        init();
-    }
-
-    /**
-     * This function is used to free the internal storage of SyncState
-     * and reset the struct to the initial state
+     * Free the internal storage of SyncState and reset the struct to the initial state
      *
      * To free the entire struct, destroy() should be used instead;
      * (In java simply set syncState = null is enough, so we don't have method destroy())
@@ -63,37 +53,26 @@ public class SyncState {
      * In situations where the struct needs to be reset but the
      * internal storage does not need to be freed, reset() should be used.
      *
-     * @return Always 0
+     * Will not return 0 as libogg said
      */
-    public int clear() {
+    public void clear() {
         data = null;
-
-        return 0;
     }
 
     /**
-     * This function is used to reset the internal counters of the SyncState to initial values
+     * Reset the internal counters of the SyncState to initial values
      *
      * It is a good idea to call this before seeking within a bitstream
      *
-     * @return Always 0
+     * Will not return 0 as libogg said
      */
-    public int reset() {
+    public void reset() {
         fill = 0;
         returned = 0;
 
         unSynced = 0;
         headerBytes = 0;
         bodyBytes = 0;
-
-        return 0;
-    }
-
-    /**
-     * Alias for reset()
-     */
-    public int init() {
-        return reset();
     }
 
     public int getDataOffset() {
@@ -107,7 +86,7 @@ public class SyncState {
     // ----- ----- //
 
     /**
-     * This function is used to provide a properly-sized buffer for writing
+     * Provide a properly-sized buffer for writing
      *
      * Buffer space which has already been returned is cleared,
      * and the buffer is extended as necessary by the size plus some additional bytes
@@ -133,7 +112,7 @@ public class SyncState {
         // Then, check if internal buffer should be extended
         if(size > storage - fill){
             // An extra page would be nice
-            int newsize = size + fill + 4096;
+            final int newsize = size + fill + 4096;
             if(data != null) {
                 byte[] temp = new byte[newsize];
                 System.arraycopy(data, 0, temp, 0, data.length);
@@ -148,7 +127,7 @@ public class SyncState {
     }
 
     /**
-     * This function is used to tell the SyncState how many bytes we wrote into the buffer
+     * Tell the SyncState how many bytes we wrote into the buffer
      *
      * The general procedure is to request a properly-sized buffer by calling buffer()
      * The buffer is then filled up to the requested size with new input,
@@ -182,32 +161,31 @@ public class SyncState {
         final int page = returned;
         final int bytes = fill - returned;
 
-        Supplier<Integer> searchCapture = () -> {
-            int next = 0;
-
-            headerBytes = 0;
-            bodyBytes = 0;
-
-            // search for possible capture
-            for (int i = 0; i < bytes - 1; i++) {
-                if (data[page + 1 + i] == 'O') {
-                    next = page + 1 + i;
-                    break;
-                }
-            }
-            if (next == 0) next = fill;
-
-            returned = next;
-            return (-(next - page));
-        };
-
         if (headerBytes == 0) {
             // not enough for a header
             if (bytes < 27) return 0;
 
             // verify capture pattern
             if (data[page] != 'O' || data[page + 1] != 'g' || data[page + 2] != 'g' || data[page + 3] != 'S') {
-                return searchCapture.get();
+                int next = 0;
+
+                // Same code occurred around line No.233
+                // For simpleness, we don't make these lines another method
+                // For constancy, we need assign headerBytes with 0
+                headerBytes = 0;
+                bodyBytes = 0;
+
+                // search for possible capture
+                for (int i = 0; i < bytes - 1; i++) {
+                    if (data[page + 1 + i] == 'O') {
+                        next = page + 1 + i;
+                        break;
+                    }
+                }
+                if (next == 0) next = fill;
+
+                returned = next;
+                return (-(next - page));
             }
 
             int _headerBytes = (data[page + 26] & 0xff) + 27;
@@ -251,23 +229,38 @@ public class SyncState {
                 System.arraycopy(checksum, 0, data, page + 22, 4);
 
                 // Bad checksum. Lose sync
-                return searchCapture.get();
+                int next = 0;
+
+                headerBytes = 0;
+                bodyBytes = 0;
+
+                // search for possible capture
+                for (int i = 0; i < bytes - 1; i++) {
+                    if (data[page + 1 + i] == 'O') {
+                        next = page + 1 + i;
+                        break;
+                    }
+                }
+                if (next == 0) next = fill;
+
+                returned = next;
+                return (-(next - page));
             }
         }
 
         // Yeah, have a whole page all ready to go
-        int newPage = returned;
+        // int newPage = returned -> pointer = page
         if(p != null){
             p.headerBase = data;
-            p.headerPointer = newPage;
+            p.headerPointer = returned;
             p.headerBytes = headerBytes;
             p.bodyBase = data;
-            p.bodyPointer = newPage + headerBytes;
+            p.bodyPointer = returned + headerBytes;
             p.bodyBytes = bodyBytes;
         }
 
         int newBytes = headerBytes + bodyBytes;
-        returned += newBytes;
+        returned += (headerBytes + bodyBytes);
         unSynced = 0;
         headerBytes = 0;
         bodyBytes = 0;
@@ -280,9 +273,7 @@ public class SyncState {
      * Keep trying until we find a page
      * Suppress 'sync errors' after reporting the first
      *
-     *   // Returns pointers into buffered data; invalidated by next call to
-     *   // _stream, _clear, _init, or _buffer
-     *
+     * @param p Destination page
      * @return -1: recaptured (hole in data)
      *          0: need more data
      *          1: page returned

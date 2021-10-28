@@ -51,42 +51,42 @@ public class Page {
      * @return 0; other numbers indicate an error in page encoding
      */
     public int version() {
-        return headerBase[headerPointer + 4] & 0xff;
+        return (headerBase[headerPointer + 4] & 0xff);
     }
 
     /**
-     * Indicates whether this page contains packet data
-     * which has been continued from the previous page.
+     * Indicate whether this page contains packet data
+     * which has been continued from the previous page
      * @return 0x1 for true, 0x0 for false
      */
     public int continued() {
-        return headerBase[headerPointer + 5] & 0x01;
+        return (headerBase[headerPointer + 5] & 0b0001);
     }
 
     /**
-     * whether this page is at the beginning of the logical bitstream.
-     * @return 0x1 for true, 0x0 for false
+     * Whether this page is at the beginning of the logical bitstream
+     * @return > 0 for true, 0x0 for false
      */
     public int bos() {
-        return headerBase[headerPointer + 5] & 0x02;
+        return (headerBase[headerPointer + 5] & 0b0010);
     }
 
     /**
-     * whether this page is at the end of the logical bitstream.
-     * @return 0x1 for true, 0x0 for false
+     * Whether this page is at the end of the logical bitstream
+     * @return > 0 for true, 0x0 for false
      */
     public int eos() {
-        return headerBase[headerPointer + 5] & 0x04;
+        return (headerBase[headerPointer + 5] & 0b0100);
     }
 
     /**
-     * Returns the exact granular position of the packet data contained at the end of this page
+     * Return the exact granular position of the packet data contained at the end of this page
      * This is useful for tracking location when seeking or decoding
      * For example, in audio codecs this position is the pcm sample number and in video this is the frame number
      * @return The specific last granular position of the decoded data contained in the page
      */
     public long granulePos() {
-        long ret = headerBase[headerPointer + 13] & 0xff;
+        long ret =         (headerBase[headerPointer + 13] & 0xff);
         ret = (ret << 8) | (headerBase[headerPointer + 12] & 0xff);
         ret = (ret << 8) | (headerBase[headerPointer + 11] & 0xff);
         ret = (ret << 8) | (headerBase[headerPointer + 10] & 0xff);
@@ -99,24 +99,24 @@ public class Page {
     }
 
     /**
-     * Returns the unique serial number for the logical bitstream of this page
+     * Return the unique serial number for the logical bitstream of this page
      * Each page contains the serial number for the logical bitstream that it belongs to
      * @return The serial number for this page.
      */
     public int serialNo() {
-        return (headerBase[headerPointer + 14] & 0xff)
+        return     (headerBase[headerPointer + 14] & 0xff)
                 | ((headerBase[headerPointer + 15] & 0xff) << 8)
                 | ((headerBase[headerPointer + 16] & 0xff) << 16)
                 | ((headerBase[headerPointer + 17] & 0xff) << 24);
     }
 
     /**
-     * Returns the sequential page number
+     * Return the sequential page number
      * This is useful for ordering pages or determining when pages have been lost
      * @return The page number for this page
      */
     public int pageNo() {
-        return (headerBase[headerPointer + 18] & 0xff)
+        return     (headerBase[headerPointer + 18] & 0xff)
                 | ((headerBase[headerPointer + 19] & 0xff) << 8)
                 | ((headerBase[headerPointer + 20] & 0xff) << 16)
                 | ((headerBase[headerPointer + 21] & 0xff) << 24);
