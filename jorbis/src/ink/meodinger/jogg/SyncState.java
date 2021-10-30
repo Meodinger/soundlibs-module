@@ -212,14 +212,14 @@ public class SyncState {
             data[page + 25] = 0;
 
             // set up a temp page struct and recompute the checksum
-            Page log = pageSeeked;
-            log.headerBase = data;
-            log.headerPointer = page;
-            log.headerBytes = headerBytes;
-            log.bodyBase = data;
-            log.bodyPointer = page + headerBytes;
-            log.bodyBytes = bodyBytes;
-            log.checksum();
+            Page temp = pageSeeked;
+            temp.headerBase = data;
+            temp.headerPointer = page;
+            temp.headerBytes = headerBytes;
+            temp.bodyBase = data;
+            temp.bodyPointer = page + headerBytes;
+            temp.bodyBytes = bodyBytes;
+            temp.checksum();
 
             // compare
             if (checksum[0] != data[page + 22] || checksum[1] != data[page + 23] ||
@@ -249,6 +249,7 @@ public class SyncState {
         }
 
         // Yeah, have a whole page all ready to go
+
         // int newPage = returned -> pointer = page
         if(p != null){
             p.headerBase = data;

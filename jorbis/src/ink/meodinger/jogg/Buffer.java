@@ -43,8 +43,7 @@ public class Buffer {
         if (state != expected) throw new IllegalStateException("Buffer state should be" + expected);
     }
 
-    public byte[] buffer = null;
-
+    private byte[] buffer = null;
     private int pointer = 0;
     private int endByte = 0;
     private int endBit = 0;
@@ -77,6 +76,8 @@ public class Buffer {
      * @param s bytes to write
      */
     public void write(byte[] s) {
+        check(IOState.WRITE);
+
         for (byte b : s) {
             if (b == 0) break;
             write(b, 8);
@@ -163,6 +164,8 @@ public class Buffer {
      * @param bytes length of bytes
      */
     public void read(byte[] s, int bytes) {
+        check(IOState.READ);
+
         int i = 0;
         while (bytes-- != 0) {
             s[i++] = (byte) read(8);
@@ -179,25 +182,23 @@ public class Buffer {
 
         // Mask must be set here because bits will change
         int mask = MASK[bits];
-        int ret;
 
         // Move to current bit index
         bits += endBit;
 
         // End of buffer encountered
         if (endByte + 4 >= storage) {
-            ret = -1;
             if (endByte + (bits - 1) / 8 >= storage) {
                 // If really read out of range, return -1
                 pointer += bits / 8;
                 endByte += bits / 8;
                 endBit = bits & 7;
-                return ret;
+                return -1;
             }
         }
 
         // Read current byte
-        ret = (buffer[pointer] & 0xff) >>> endBit;
+        int ret = (buffer[pointer] & 0xff) >>> endBit;
         // Read more bytes if needed
         if (bits > 8) {
             ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
@@ -230,21 +231,19 @@ public class Buffer {
         check(IOState.READ);
 
         int mask = 32 - bits;
-        int ret;
 
         bits += endBit;
 
         if (endByte + 4 >= storage) {
-            ret = -1;
             if (endByte * 8 + bits > storage * 8) {
                 pointer += bits / 8;
                 endByte += bits / 8;
                 endBit = bits & 7;
-                return ret;
+                return -1;
             }
         }
 
-        ret = (buffer[pointer] & 0xff) << (24 + endBit);
+        int ret = (buffer[pointer] & 0xff) << (24 + endBit);
         if (bits > 8) {
             ret |= (buffer[pointer+1] & 0xff) << (16 + endBit);
             if (bits > 16) {
@@ -273,20 +272,17 @@ public class Buffer {
     public int readOne() {
         check(IOState.READ);
 
-        int ret;
-
         if (endByte >= storage) {
-            ret = -1;
             endBit++;
             if (endBit > 7) {
                 pointer++;
                 endByte++;
                 endBit = 0;
             }
-            return ret;
+            return -1;
         }
 
-        ret = (buffer[pointer] >> endBit) & 0x1;
+        int ret = (buffer[pointer] >> endBit) & 0x1;
 
         endBit++;
         if (endBit > 7) {
@@ -390,4 +386,10 @@ public class Buffer {
         return (endByte * 8 + endBit);
     }
 
+    /**
+     * Get internal buffer
+     */
+    public byte[] getBuffer() {
+        return buffer;
+    }
 }
