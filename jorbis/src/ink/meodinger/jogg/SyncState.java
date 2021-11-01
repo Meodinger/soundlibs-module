@@ -42,7 +42,7 @@ public class SyncState {
      */
     private int bodyBytes = 0;
 
-    // ----- ----- //
+    // ----- State related ----- //
 
     /**
      * Free the internal storage of SyncState and reset the struct to the initial state
@@ -83,7 +83,7 @@ public class SyncState {
         return fill;
     }
 
-    // ----- ----- //
+    // ----- Buffer related ----- //
 
     /**
      * Provide a properly-sized buffer for writing
@@ -143,7 +143,7 @@ public class SyncState {
         return 0;
     }
 
-    // ----- ----- //
+    // ----- Page related ----- //
 
     private final Page pageSeeked = new Page();
     private final byte[] checksum = new byte[4];

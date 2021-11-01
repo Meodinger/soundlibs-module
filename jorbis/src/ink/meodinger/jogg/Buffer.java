@@ -45,9 +45,9 @@ public class Buffer {
 
     private byte[] buffer = null;
     private int pointer = 0;
+    private int storage = 0;
     private int endByte = 0;
     private int endBit = 0;
-    private int storage = 0;
 
     /**
      * Initialize buffer
@@ -350,7 +350,7 @@ public class Buffer {
      * Skip some bits
      * @param bits length of bits to skip
      */
-    public void skip(int bits) {
+    public void advance(int bits) {
         bits += endBit;
 
         pointer += bits / 8;
@@ -361,7 +361,7 @@ public class Buffer {
     /**
      * Skip one bit
      */
-    public void skipOne() {
+    public void advanceOne() {
         endBit++;
         if (endBit > 7) {
             pointer++;

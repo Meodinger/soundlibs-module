@@ -178,6 +178,8 @@ public class StreamState {
         }
     }
 
+    // ----- Decode related ----- //
+
     /**
      * Submit a packet to the bitstream for page encapsulation
      * After this is called, more packets can be submitted, or pages can be written out
