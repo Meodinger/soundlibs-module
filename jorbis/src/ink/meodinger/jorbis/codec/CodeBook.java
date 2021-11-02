@@ -7,8 +7,4 @@ package ink.meodinger.jorbis.codec;
  */
 
 public class CodeBook {
-
-    public static class StaticCodeBook {
-
-    }
 }

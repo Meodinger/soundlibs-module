@@ -51,4 +51,8 @@ public class Packet {
      * about the gap
      */
     public long packetNo = 0;
+
+    public void clear() {
+        // todo
+    }
 }

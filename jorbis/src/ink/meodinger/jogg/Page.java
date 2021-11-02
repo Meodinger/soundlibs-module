@@ -122,6 +122,10 @@ public class Page {
                 | ((headerBase[headerPointer + 21] & 0xff) << 24);
     }
 
+    public int packets() {
+        // todo
+    }
+
     /**
      * Checksum an ogg page
      */

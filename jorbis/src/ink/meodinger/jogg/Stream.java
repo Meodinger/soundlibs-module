@@ -8,7 +8,7 @@ import java.util.Arrays;
  * Have fun with my code!
  */
 
-public class StreamState {
+public class Stream {
 
     // ----- Constants ----- //
 
@@ -100,13 +100,13 @@ public class StreamState {
 
     // ----- Constructors ----- //
 
-    public StreamState() {}
+    public Stream() {}
 
-    public StreamState(int serialNo) {
+    public Stream(int serialNo) {
         init(serialNo);
     }
 
-    // ----- Methods ----- //
+    // ----- Stream API ----- //
 
     /**
      * Initialize the StreamState and assign the stream a given serial number
@@ -149,7 +149,15 @@ public class StreamState {
 
     }
 
+    public void reset(int serialNo) {
+        // todo
+    }
+
     // destroy() is not needed (same as clear())
+
+    public int check() {
+        // todo
+    }
 
     public int eof() {
         return eos;
@@ -178,7 +186,11 @@ public class StreamState {
         }
     }
 
-    // ----- Decode related ----- //
+    // ----- Encode & Decode ----- //
+
+    public int bytesIn(byte[] inputs, int eos, long granulePos) {
+        // todo
+    }
 
     /**
      * Submit a packet to the bitstream for page encapsulation
@@ -304,6 +316,10 @@ public class StreamState {
 
         packetNo++;
         return 1;
+    }
+
+    public int packetPeek(Packet packet) {
+        // todo
     }
 
     /**
@@ -458,6 +474,10 @@ public class StreamState {
         return 0;
     }
 
+    public int pageOutFill(Page page, int fill) {
+        // todo
+    }
+
     /**
      * This will flush remaining packets into a page (returning nonzero),
      * even if there is not enough data to trigger a flush normally
@@ -586,4 +606,7 @@ public class StreamState {
         return 1;
     }
 
+    public int flushFill(Page page, int fill) {
+        // todo
+    }
 }

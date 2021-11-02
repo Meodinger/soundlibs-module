@@ -11,7 +11,7 @@ public class Buffer {
     private static final int BUFFER_INCREMENT = 256;
 
     /**
-     * For example: MASK[7] = 0x7f -> 0b01111111
+     * For example: MASK[7] = 0x7f -> 0b0111_1111
      */
     private static final int[] MASK = { 0x00000000,
             0x00000001, 0x00000003, 0x00000007, 0x0000000f,
@@ -23,6 +23,12 @@ public class Buffer {
             0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff,
             0x1fffffff, 0x3fffffff, 0x7fffffff, 0xffffffff
     };
+    private static final int[] MASK8 = { 0x00,
+            0x80, 0xc0, 0xe0, 0xf0,
+            0xf8, 0xfc, 0xfe, 0xff
+    };
+    // 0b1000_0000, 0b1100_0000, 0b1110_0000, 0b1111_0000
+    // 0b1111_1000, 0b1111_1100, 0b1111_1110, 0b1111_1111
 
     private enum IOState {
         WRITE("Write"), READ("Read");
@@ -43,11 +49,14 @@ public class Buffer {
         if (state != expected) throw new IllegalStateException("Buffer state should be" + expected);
     }
 
+    private int endByte = 0;
+    private int endBit = 0;
+
     private byte[] buffer = null;
     private int pointer = 0;
     private int storage = 0;
-    private int endByte = 0;
-    private int endBit = 0;
+
+    // ----- Write ----- //
 
     /**
      * Initialize buffer
@@ -61,6 +70,34 @@ public class Buffer {
         pointer = 0;
         storage = BUFFER_INCREMENT;
     }
+
+    public void writeCheck() {
+        if (buffer == null || storage <= 0)
+            throw new IllegalStateException("Uninitialized");
+    }
+
+    public void writeTrunc(int bits) {
+        final int bytes = bits >> 3;
+
+        bits -= bytes * 8;
+
+        buffer[bits] &= MASK[bits];
+        pointer = bytes;
+        endByte = bytes;
+        endBit = bits;
+    }
+
+    public void writeAlign() {
+        final int bits = 8 - endBit;
+        if (bits < 8) write(0, bits);
+    }
+
+    /*
+    public void writeAlignB() {
+        final int bits = 8 - endBit;
+        if (bits < 8) writeB(0, bits);
+    }
+     */
 
     /**
      * Clear buffer
@@ -93,12 +130,12 @@ public class Buffer {
         check(IOState.WRITE);
 
         // Mask is set here in case of bits changes
-        int mask = MASK[bits];
+        final int mask = MASK[bits];
 
         // Buffer cannot contain all bits, increase buffer length
         // +4 because length of int is 32 (4 * 8 byte -> 32 bits)
         if (endByte + 4 >= storage) {
-            byte[] temp = new byte[storage + BUFFER_INCREMENT];
+            final byte[] temp = new byte[storage + BUFFER_INCREMENT];
 
             System.arraycopy(buffer, 0, temp, 0, storage);
             buffer = temp;
@@ -132,6 +169,52 @@ public class Buffer {
         endByte += bits / 8; // endByte index
         endBit = bits & 7;   // endBit range is 0 -> 7
     }
+
+    public void writeB(int value, int bits) {
+        check(IOState.WRITE);
+
+        // Mask is set here in case of bits changes
+        final int mask = MASK[bits];
+
+        // Buffer cannot contain all bits, increase buffer length
+        // +4 because length of int is 32 (4 * 8 byte -> 32 bits)
+        if (endByte + 4 >= storage) {
+            final byte[] temp = new byte[storage + BUFFER_INCREMENT];
+
+            System.arraycopy(buffer, 0, temp, 0, storage);
+            buffer = temp;
+            storage += BUFFER_INCREMENT;
+        }
+
+        // use mask to take valid bits
+        value = (value & mask) << (32 - bits);
+        // move to current bit index
+        bits += endBit;
+
+        // write to byte at the end
+        buffer[pointer] |= (byte) (value >>> (24 + endBit));
+        // write to following bytes if value contains more than one byte
+        if (bits >= 8) {
+            buffer[pointer + 1] = (byte) (value >>> (16 + endBit));
+            if (bits >= 16) {
+                buffer[pointer + 2] = (byte) (value >>> (8 + endBit));
+                if (bits >= 24) {
+                    buffer[pointer + 3] = (byte) (value >>> (endBit));
+                    if (bits >= 32) {
+                        if (endBit > 0) buffer[pointer + 4] = (byte) (value << (8 - endBit));
+                        else buffer[pointer + 4] = 0;
+                    }
+                }
+            }
+        }
+
+        // update state
+        pointer += bits / 8; // equal to endByte
+        endByte += bits / 8; // endByte index
+        endBit = bits & 7;   // endBit range is 0 -> 7
+    }
+
+    // ----- Read ----- //
 
     /**
      * Initialize read
@@ -293,6 +376,8 @@ public class Buffer {
         return ret;
     }
 
+    // ----- Other ----- //
+
     /**
      * reset buffer
      */
@@ -369,6 +454,8 @@ public class Buffer {
             endBit = 0;
         }
     }
+
+    // ----- Accessors ----- //
 
     /**
      * Bytes count in buffer

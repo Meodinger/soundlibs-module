@@ -8,9 +8,6 @@ package ink.meodinger.jorbis;
 
 public class Util {
 
-    public static final byte[] VORBIS = "vorbis".getBytes();
-    public static final byte[] VENDOR = "Meodinger Jorbis I 20220101".getBytes();
-
     public static int i_log(int v){
         int ret = 0;
         while (v != 0) {

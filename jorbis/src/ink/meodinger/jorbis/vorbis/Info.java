@@ -1,6 +1,7 @@
 package ink.meodinger.jorbis.vorbis;
 
 import ink.meodinger.jorbis.*;
+import ink.meodinger.jorbis.codec.*;
 
 /**
  * Author: Meodinger
@@ -10,14 +11,11 @@ import ink.meodinger.jorbis.*;
 
 public class Info {
 
-    private static final int E_BAD_PACKET=-136;
-    private static final int E_NOT_AUDIO=-135;
-
-    private static final int VI_TIME_B=1;
-    private static final int VI_FLOOR_B=2;
-    private static final int VI_RES_B=3;
-    private static final int VI_MAP_B=1;
-    private static final int VI_WINDOW_B=1;
+    private static final int VI_TIME_B   = 1;
+    private static final int VI_FLOOR_B  = 2;
+    private static final int VI_RES_B    = 3;
+    private static final int VI_MAP_B    = 1;
+    private static final int VI_WINDOW_B = 1;
 
     private int version = 0;
     private int channels = 0;
@@ -49,34 +47,71 @@ public class Info {
     // different residue backends, etc. Each mode consists of a
     // blockSize flag and a mapping (along with the mapping setup)
     private int modes = 0;
+    //private InfoMode[] modeParam = null;
+
     private int maps = 0;
-    private int times = 0;
-    private int floors = 0;
-    private int residues = 0;
-    private int books = 0;
-    private int pSys = 0; // encode only
-
-    // private InfoMode[] mode_param = null;
-
     private int[] mapType = null;
     private Object[] mapParam = null;
 
-
+    private int times = 0;
     private int[] timeType = null;
     private Object[] timeParam = null;
 
+    private int floors = 0;
     private int[] floorType = null;
     private Object[] floorParam = null;
 
+    private int residues = 0;
     private int[] residueType = null;
     private Object[] residueParam = null;
 
-    // private StaticCodeBook[] book_param=null;
+    private int books = 0;
+    private CodeBookStatic[] bookParam = null;
 
-    // private PsyInfo[] psy_param=new PsyInfo[64]; // encode only
+    private int pSys = 0; // encode only
+    //private PsyInfo[] psyParam = new PsyInfo[64]; // encode only
 
     // for block long/sort tuning; encode only
     private int envelopeSa = 0;
     private float preEchoThresh = 0f;
     private float preEchoClamp = 0f;
+
+    // -----  ----- //
+
+    public void init() {
+        rate = 0;
+    }
+
+    public void clear() {
+        int i;
+
+        //for (i = 0; i < modes; i++) modeParam[i] = null;
+        //modeParam = null;
+        //for (i = 0; i < maps; i++) AbstractMapping.mappingP[mapType[i].freeInfo(mapParam[i])];
+        mapParam = null;
+        //for (i = 0; i < times; i++) AbstractTime.timeP[timeType[i].freeInfo(timeParam[i])];
+        timeParam = null;
+        //for (i = 0; i < floors; i++) AbstractFloor.floorP[floorType[i].freeInfo(floorParam[i])];
+        floorParam = null;
+        //for (i = 0; i < residues; i++) AbstractResidue.residueP[residueType[i].freeInfo(residueParam[i])];
+        residueParam = null;
+
+        // the static codebooks *are* freed if you call info_clear(),
+        // because decode side does alloc a 'static' codebook.
+        // Calling clear on the full codebook does not clear the
+        // static codebook (that's our responsibility)
+        for(i = 0; i < books; i++) {
+            // just in case the decoder pre-cleared to save space
+            if(bookParam[i] != null) {
+                //bookParam[i].clear();
+                bookParam[i] = null;
+            }
+        }
+        //if (vi->bookParam) free(vi->bookParam);
+        bookParam = null;
+
+        //for(i = 0; i < pSys; i++) psyParam[i].free();
+
+        throw new IllegalStateException("todo: re-write");
+    }
 }

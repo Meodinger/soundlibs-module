@@ -1,7 +1,7 @@
 package ink.meodinger.jorbis.vorbis;
 
 import ink.meodinger.jogg.*;
-import ink.meodinger.jorbis.Util;
+import ink.meodinger.jorbis.Vorbis;
 
 /**
  * Author: Meodinger
@@ -14,7 +14,7 @@ public class Comment {
     private static final int E_IMPLANTATION = -130;
 
     // unlimited user comment fields.
-    private byte[] vendor = Util.VENDOR;
+    private byte[] vendor = Vorbis.VENDOR;
     private byte[][] userComments = null;
     private int[] commentLengths = null;
     private int commentCount = 0;
