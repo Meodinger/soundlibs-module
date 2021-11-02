@@ -27,27 +27,6 @@ public class Buffer {
             0x80, 0xc0, 0xe0, 0xf0,
             0xf8, 0xfc, 0xfe, 0xff
     };
-    // 0b1000_0000, 0b1100_0000, 0b1110_0000, 0b1111_0000
-    // 0b1111_1000, 0b1111_1100, 0b1111_1110, 0b1111_1111
-
-    private enum IOState {
-        WRITE("Write"), READ("Read");
-
-        String description;
-
-        IOState(String description) {
-            this.description = description;
-        }
-
-        @Override
-        public String toString() {
-            return description;
-        }
-    }
-    private IOState state = null;
-    private void check(IOState expected) {
-        if (state != expected) throw new IllegalStateException("Buffer state should be" + expected);
-    }
 
     private int endByte = 0;
     private int endBit = 0;
@@ -62,8 +41,6 @@ public class Buffer {
      * Initialize buffer
      */
     public void writeInit() {
-        state = IOState.WRITE;
-
         buffer = new byte[BUFFER_INCREMENT];
         buffer[0] = 0x0;
 
@@ -71,20 +48,14 @@ public class Buffer {
         storage = BUFFER_INCREMENT;
     }
 
-    public void writeCheck() {
-        if (buffer == null || storage <= 0)
-            throw new IllegalStateException("Uninitialized");
-    }
+    public void writeTrunc(final int bits) {
+        final int _endBytes = bits >> 3;
+        final int _endBit = bits - _endBytes * 8;
 
-    public void writeTrunc(int bits) {
-        final int bytes = bits >> 3;
-
-        bits -= bytes * 8;
-
-        buffer[bits] &= MASK[bits];
-        pointer = bytes;
-        endByte = bytes;
-        endBit = bits;
+        buffer[_endBit] &= MASK[_endBit];
+        pointer = _endBytes;
+        endByte = _endBytes;
+        endBit  = _endBit;
     }
 
     public void writeAlign() {
@@ -103,8 +74,6 @@ public class Buffer {
      * Clear buffer
      */
     public void writeClear() {
-        check(IOState.WRITE);
-
         buffer = null;
     }
 
@@ -112,10 +81,8 @@ public class Buffer {
      * Write bytes until 0 encountered
      * @param s bytes to write
      */
-    public void write(byte[] s) {
-        check(IOState.WRITE);
-
-        for (byte b : s) {
+    public void write(final byte[] s) {
+        for (final byte b : s) {
             if (b == 0) break;
             write(b, 8);
         }
@@ -126,38 +93,37 @@ public class Buffer {
      * @param value bits to write as int
      * @param bits  length of value
      */
-    public void write(int value, int bits) {
-        check(IOState.WRITE);
-
+    public void write(final int value, final int bits) {
         // Mask is set here in case of bits changes
         final int mask = MASK[bits];
 
         // Buffer cannot contain all bits, increase buffer length
         // +4 because length of int is 32 (4 * 8 byte -> 32 bits)
         if (endByte + 4 >= storage) {
-            final byte[] temp = new byte[storage + BUFFER_INCREMENT];
+            final int newStorage = storage + BUFFER_INCREMENT;
+            final byte[] newBuffer = new byte[newStorage];
 
-            System.arraycopy(buffer, 0, temp, 0, storage);
-            buffer = temp;
-            storage += BUFFER_INCREMENT;
+            System.arraycopy(buffer, 0, newBuffer, 0, storage);
+            buffer = newBuffer;
+            storage = newStorage;
         }
 
         // use mask to take valid bits
-        value &= mask;
-        // move to current bit index
-        bits += endBit;
+        final int validValue = value & mask;
+        // move to current bit index (how many bits will be actually write)
+        final int actualBits = bits + endBit;
 
         // write to byte at the end
-        buffer[pointer] |= (byte) (value << endBit);
+        buffer[pointer] |= (byte) (validValue << endBit);
         // write to following bytes if value contains more than one byte
-        if (bits >= 8) {
-            buffer[pointer + 1] = (byte) (value >>> (8 - endBit));
-            if (bits >= 16) {
-                buffer[pointer + 2] = (byte) (value >>> (16 - endBit));
-                if (bits >= 24) {
-                    buffer[pointer + 3] = (byte) (value >>> (24 - endBit));
-                    if (bits >= 32) {
-                        if (endBit > 0) buffer[pointer + 4] = (byte) (value >>> (32 - endBit));
+        if (actualBits >= 8) {
+            buffer[pointer + 1] = (byte) (validValue >>> (8 - endBit));
+            if (actualBits >= 16) {
+                buffer[pointer + 2] = (byte) (validValue >>> (16 - endBit));
+                if (actualBits >= 24) {
+                    buffer[pointer + 3] = (byte) (validValue >>> (24 - endBit));
+                    if (actualBits >= 32) {
+                        if (endBit > 0) buffer[pointer + 4] = (byte) (validValue >>> (32 - endBit));
                         else buffer[pointer + 4] = 0;
                     }
                 }
@@ -165,53 +131,44 @@ public class Buffer {
         }
 
         // update state
-        pointer += bits / 8; // equal to endByte
-        endByte += bits / 8; // endByte index
-        endBit = bits & 7;   // endBit range is 0 -> 7
+        pointer += actualBits / 8; // equal to endByte
+        endByte += actualBits / 8; // endByte index
+        endBit   = actualBits & 7; // endBit range is 0 -> 7
     }
 
-    public void writeB(int value, int bits) {
-        check(IOState.WRITE);
-
-        // Mask is set here in case of bits changes
+    public void writeB(final int value, final int bits) {
         final int mask = MASK[bits];
 
-        // Buffer cannot contain all bits, increase buffer length
-        // +4 because length of int is 32 (4 * 8 byte -> 32 bits)
         if (endByte + 4 >= storage) {
-            final byte[] temp = new byte[storage + BUFFER_INCREMENT];
+            final int newStorage = storage + BUFFER_INCREMENT;
+            final byte[] newBuffer = new byte[newStorage];
 
-            System.arraycopy(buffer, 0, temp, 0, storage);
-            buffer = temp;
-            storage += BUFFER_INCREMENT;
+            System.arraycopy(buffer, 0, newBuffer, 0, storage);
+            buffer = newBuffer;
+            storage = newStorage;
         }
 
-        // use mask to take valid bits
-        value = (value & mask) << (32 - bits);
-        // move to current bit index
-        bits += endBit;
+        final int validValue = value & mask;
+        final int actualBits = bits + endBit;
 
-        // write to byte at the end
-        buffer[pointer] |= (byte) (value >>> (24 + endBit));
-        // write to following bytes if value contains more than one byte
-        if (bits >= 8) {
-            buffer[pointer + 1] = (byte) (value >>> (16 + endBit));
-            if (bits >= 16) {
-                buffer[pointer + 2] = (byte) (value >>> (8 + endBit));
-                if (bits >= 24) {
-                    buffer[pointer + 3] = (byte) (value >>> (endBit));
-                    if (bits >= 32) {
-                        if (endBit > 0) buffer[pointer + 4] = (byte) (value << (8 - endBit));
+        buffer[pointer] |= (byte) (validValue >>> (24 + endBit));
+        if (actualBits >= 8) {
+            buffer[pointer + 1] = (byte) (validValue >>> (16 + endBit));
+            if (actualBits >= 16) {
+                buffer[pointer + 2] = (byte) (validValue >>> (8 + endBit));
+                if (actualBits >= 24) {
+                    buffer[pointer + 3] = (byte) (validValue >>> (endBit));
+                    if (actualBits >= 32) {
+                        if (endBit > 0) buffer[pointer + 4] = (byte) (validValue << (8 - endBit));
                         else buffer[pointer + 4] = 0;
                     }
                 }
             }
         }
 
-        // update state
-        pointer += bits / 8; // equal to endByte
-        endByte += bits / 8; // endByte index
-        endBit = bits & 7;   // endBit range is 0 -> 7
+        pointer += actualBits / 8;
+        endByte += actualBits / 8;
+        endBit   = actualBits & 7;
     }
 
     // ----- Read ----- //
@@ -221,7 +178,7 @@ public class Buffer {
      * @param buf   init buffer
      * @param bytes buffer length
      */
-    public void readInit(byte[] buf, int bytes) {
+    public void readInit(final byte[] buf, final int bytes) {
         readInit(buf, 0, bytes);
     }
 
@@ -231,9 +188,7 @@ public class Buffer {
      * @param start start index
      * @param bytes buffer length
      */
-    public void readInit(byte[] buf, int start, int bytes) {
-        state = IOState.READ;
-
+    public void readInit(final byte[] buf, final int start, final int bytes) {
         buffer = buf;
         pointer = start;
         endByte = 0;
@@ -246,11 +201,10 @@ public class Buffer {
      * @param s     which array will write to
      * @param bytes length of bytes
      */
-    public void read(byte[] s, int bytes) {
-        check(IOState.READ);
-
+    public void read(final byte[] s, final int bytes) {
         int i = 0;
-        while (bytes-- != 0) {
+        int left = bytes;
+        while (left-- != 0) {
             s[i++] = (byte) read(8);
         }
     }
@@ -260,37 +214,37 @@ public class Buffer {
      * @param bits length of bits to read
      * @return bits as int
      */
-    public int read(int bits) {
-        check(IOState.READ);
-
+    public int read(final int bits) {
         // Mask must be set here because bits will change
-        int mask = MASK[bits];
-
-        // Move to current bit index
-        bits += endBit;
+        final int mask = MASK[bits];
+        // Move to current bit index (how many bits will be actually read)
+        final int actualBits = bits + endBit;
 
         // End of buffer encountered
         if (endByte + 4 >= storage) {
-            if (endByte + (bits - 1) / 8 >= storage) {
+            if (endByte + (actualBits - 1) / 8 >= storage) {
                 // If really read out of range, return -1
-                pointer += bits / 8;
-                endByte += bits / 8;
-                endBit = bits & 7;
+                pointer = storage - 1; // ?? pointer = NULL
+                endByte = storage;
+                endBit  = 1;
                 return -1;
-            }
+            } else if (actualBits == 0) return 0;
+            // special case to avoid reading b->ptr[0],
+            // which might be past the end of the buffer;
+            // also skips some useless accounting
         }
 
         // Read current byte
-        int ret = (buffer[pointer] & 0xff) >>> endBit;
+        int ret = buffer[pointer] >>> endBit;
         // Read more bytes if needed
-        if (bits > 8) {
-            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
-            if (bits > 16) {
-                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
-                if (bits > 24) {
-                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
-                    if (bits > 32 && endBit != 0) {
-                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
+        if (actualBits > 8) {
+            ret |= buffer[pointer + 1]<< (8 - endBit);
+            if (actualBits > 16) {
+                ret |= buffer[pointer + 2] << (16 - endBit);
+                if (actualBits > 24) {
+                    ret |= buffer[pointer + 3]<< (24 - endBit);
+                    if (actualBits > 32 && endBit != 0) {
+                        ret |= buffer[pointer + 4]<< (32 - endBit);
                     }
                 }
             }
@@ -298,9 +252,9 @@ public class Buffer {
         ret &= mask;
 
         // Update state
-        pointer += bits / 8;
-        endByte += bits / 8;
-        endBit = bits & 7;
+        pointer += actualBits / 8;
+        endByte += actualBits / 8;
+        endBit   = actualBits & 7;
 
         return ret;
     }
@@ -310,40 +264,37 @@ public class Buffer {
      * @param bits length of bits to read
      * @return bits as Int
      */
-    public int readB(int bits) {
-        check(IOState.READ);
-
-        int mask = 32 - bits;
-
-        bits += endBit;
+    public int readB(final int bits) {
+        final int mask = 32 - bits;
+        final int actualBits = bits + endBit;
 
         if (endByte + 4 >= storage) {
-            if (endByte * 8 + bits > storage * 8) {
-                pointer += bits / 8;
-                endByte += bits / 8;
-                endBit = bits & 7;
+            if (endByte + (actualBits - 1) / 8 >= storage) {
+                pointer = storage - 1; // ?? pointer = NULL
+                endByte = storage;
+                endBit  = 1;
                 return -1;
-            }
+            } else if (actualBits == 0) return 0;
         }
 
-        int ret = (buffer[pointer] & 0xff) << (24 + endBit);
-        if (bits > 8) {
-            ret |= (buffer[pointer+1] & 0xff) << (16 + endBit);
-            if (bits > 16) {
-                ret |= (buffer[pointer + 2] & 0xff) << (8 + endBit);
-                if (bits > 24) {
-                    ret |= (buffer[pointer + 3] & 0xff) << (endBit);
-                    if (bits > 32 && endBit != 0) {
-                        ret |= (buffer[pointer + 4] & 0xff) >> (8 - endBit);
+        int ret = buffer[pointer] << (24 + endBit);
+        if (actualBits > 8) {
+            ret |= buffer[pointer+1] << (16 + endBit);
+            if (actualBits > 16) {
+                ret |= buffer[pointer + 2] << (8 + endBit);
+                if (actualBits > 24) {
+                    ret |= buffer[pointer + 3] << (endBit);
+                    if (actualBits > 32 && endBit != 0) {
+                        ret |= buffer[pointer + 4] >> (8 - endBit);
                     }
                 }
             }
         }
         ret = (ret >>> (mask >> 1)) >>> ((mask + 1) >> 1);
 
-        pointer += bits / 8;
-        endByte += bits / 8;
-        endBit = bits & 7;
+        pointer += actualBits / 8;
+        endByte += actualBits / 8;
+        endBit   = actualBits & 7;
 
         return ret;
     }
@@ -353,22 +304,17 @@ public class Buffer {
      * @return bit as int
      */
     public int readOne() {
-        check(IOState.READ);
-
         if (endByte >= storage) {
-            endBit++;
-            if (endBit > 7) {
-                pointer++;
-                endByte++;
-                endBit = 0;
-            }
+            // If really read out of range, return -1
+            pointer = storage - 1; // ?? pointer = NULL
+            endByte = storage;
+            endBit  = 1;
             return -1;
         }
 
-        int ret = (buffer[pointer] >> endBit) & 0x1;
+        int ret = (buffer[pointer] >>> endBit) & 0x1;
 
-        endBit++;
-        if (endBit > 7) {
+        if (++endBit > 7) {
             pointer++;
             endByte++;
             endBit = 0;
@@ -394,26 +340,29 @@ public class Buffer {
      * @param bits length of bits to look
      * @return bits as int
      */
-    public int look(int bits) {
-        int mask = MASK[bits];
-
-        bits += endBit;
+    public int look(final int bits) {
+        final int mask = MASK[bits];
+        final int actualBits = bits + endBit;
 
         if (endByte + 4 >= storage) {
-            if (endByte + (bits - 1) / 8 >= storage) return -1;
+            if (endByte + ((actualBits + 7) >> 3) >= storage) return -1;
+            // special case to avoid reading b->ptr[0],
+            // which might be past the end of the buffer;
+            // also skips some useless accounting
+            else if (actualBits == 0) return 0;
         }
 
         // Look current byte
-        int ret = (buffer[pointer] & 0xff) >>> endBit;
+        int ret = buffer[pointer] >>> endBit;
         // Look more bytes if needed
-        if (bits > 8) {
-            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
-            if (bits > 16) {
-                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
-                if (bits > 24) {
-                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
-                    if (bits > 32 && endBit != 0) {
-                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
+        if (actualBits > 8) {
+            ret |= buffer[pointer + 1] << (8 - endBit);
+            if (actualBits > 16) {
+                ret |= buffer[pointer + 2] << (16 - endBit);
+                if (actualBits > 24) {
+                    ret |= buffer[pointer + 3] << (24 - endBit);
+                    if (actualBits > 32 && endBit != 0) {
+                        ret |= buffer[pointer + 4] << (32 - endBit);
                     }
                 }
             }
@@ -435,20 +384,19 @@ public class Buffer {
      * Skip some bits
      * @param bits length of bits to skip
      */
-    public void advance(int bits) {
-        bits += endBit;
+    public void advance(final int bits) {
+        final int actualBits = bits + endBit;
 
-        pointer += bits / 8;
-        endByte += bits / 8;
-        endBit = bits & 7;
+        pointer += actualBits / 8;
+        endByte += actualBits / 8;
+        endBit   = actualBits & 7;
     }
 
     /**
      * Skip one bit
      */
     public void advanceOne() {
-        endBit++;
-        if (endBit > 7) {
+        if (++endBit > 7) {
             pointer++;
             endByte++;
             endBit = 0;
@@ -478,5 +426,44 @@ public class Buffer {
      */
     public byte[] getBuffer() {
         return buffer;
+    }
+
+    // ----- Static Write Copy ----- //
+
+    public static void writeCopy(final Buffer source, final Buffer target, final int bits, final boolean msb) {
+        final int validBytes = bits / 8;
+        final int actualBits = bits - validBytes * 8;
+        final int pBytes = (target.endBit + bits) / 8;
+
+        // Expand storage up-front
+        if (target.endByte + pBytes >= target.storage) {
+            final int newStorage = target.endByte + pBytes + BUFFER_INCREMENT;
+            final byte[] temp = new byte[newStorage];
+
+            System.arraycopy(target.buffer, 0, temp, 0, target.storage);
+            target.storage = newStorage;
+            target.buffer = temp;
+        }
+
+        // copy whole octets
+        if (target.endBit > 0) {
+            // unaligned copy, do it
+            for (int i = 0; i < validBytes; i++) {
+                if (msb) target.writeB(source.buffer[i], 8);
+                else target.write(source.buffer[i], 8);
+            }
+        } else {
+            // aligned block copy
+            System.arraycopy(source.buffer, 0, target.buffer, target.pointer, validBytes);
+            target.pointer += validBytes;
+            target.endByte += validBytes;
+            target.buffer[target.pointer] = 0x0;
+        }
+
+        // copy trailing bits
+        if (actualBits > 0) {
+            if (msb) target.writeB(source.buffer[validBytes] >>> (8 - actualBits), actualBits);
+            else target.write(source.buffer[validBytes], actualBits);
+        }
     }
 }
