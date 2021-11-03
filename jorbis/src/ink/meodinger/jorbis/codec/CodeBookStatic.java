@@ -1,4 +1,4 @@
-package ink.meodinger.jorbis.codec
+package ink.meodinger.jorbis.codec;
 
 /**
  * Author: Meodinger
@@ -6,5 +6,5 @@ package ink.meodinger.jorbis.codec
  * Have fun with my code!
  */
 
-class CodeBookStatic {
+public class CodeBookStatic {
 }

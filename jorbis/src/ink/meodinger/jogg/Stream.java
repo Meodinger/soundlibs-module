@@ -157,6 +157,7 @@ public class Stream {
 
     public int check() {
         // todo
+        return 0;
     }
 
     public int eof() {
@@ -190,6 +191,8 @@ public class Stream {
 
     public int bytesIn(byte[] inputs, int eos, long granulePos) {
         // todo
+        return 0;
+
     }
 
     /**
@@ -320,6 +323,8 @@ public class Stream {
 
     public int packetPeek(Packet packet) {
         // todo
+
+        return 0;
     }
 
     /**
@@ -476,6 +481,8 @@ public class Stream {
 
     public int pageOutFill(Page page, int fill) {
         // todo
+        return 0;
+
     }
 
     /**
@@ -608,5 +615,7 @@ public class Stream {
 
     public int flushFill(Page page, int fill) {
         // todo
+        return 0;
+
     }
 }

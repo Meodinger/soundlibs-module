@@ -222,7 +222,7 @@ public class Buffer {
 
         // End of buffer encountered
         if (endByte + 4 >= storage) {
-            if (endByte + (actualBits - 1) / 8 >= storage) {
+            if (endByte + ((actualBits + 7) >> 3) > storage) {
                 // If really read out of range, return -1
                 pointer = storage - 1; // ?? pointer = NULL
                 endByte = storage;
@@ -235,16 +235,16 @@ public class Buffer {
         }
 
         // Read current byte
-        int ret = buffer[pointer] >>> endBit;
+        int ret = (buffer[pointer] & 0xff) >>> endBit;
         // Read more bytes if needed
         if (actualBits > 8) {
-            ret |= buffer[pointer + 1]<< (8 - endBit);
+            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
             if (actualBits > 16) {
-                ret |= buffer[pointer + 2] << (16 - endBit);
+                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
                 if (actualBits > 24) {
-                    ret |= buffer[pointer + 3]<< (24 - endBit);
+                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
                     if (actualBits > 32 && endBit != 0) {
-                        ret |= buffer[pointer + 4]<< (32 - endBit);
+                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
                     }
                 }
             }
@@ -269,7 +269,7 @@ public class Buffer {
         final int actualBits = bits + endBit;
 
         if (endByte + 4 >= storage) {
-            if (endByte + (actualBits - 1) / 8 >= storage) {
+            if (endByte + ((actualBits + 7) >> 3 ) > storage) {
                 pointer = storage - 1; // ?? pointer = NULL
                 endByte = storage;
                 endBit  = 1;
@@ -277,15 +277,15 @@ public class Buffer {
             } else if (actualBits == 0) return 0;
         }
 
-        int ret = buffer[pointer] << (24 + endBit);
+        int ret = (buffer[pointer] & 0xff) >>> endBit;
         if (actualBits > 8) {
-            ret |= buffer[pointer+1] << (16 + endBit);
+            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
             if (actualBits > 16) {
-                ret |= buffer[pointer + 2] << (8 + endBit);
+                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
                 if (actualBits > 24) {
-                    ret |= buffer[pointer + 3] << (endBit);
+                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
                     if (actualBits > 32 && endBit != 0) {
-                        ret |= buffer[pointer + 4] >> (8 - endBit);
+                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
                     }
                 }
             }
@@ -345,24 +345,24 @@ public class Buffer {
         final int actualBits = bits + endBit;
 
         if (endByte + 4 >= storage) {
-            if (endByte + ((actualBits + 7) >> 3) >= storage) return -1;
+            if (endByte + ((actualBits + 7) >> 3) > storage) return -1;
             // special case to avoid reading b->ptr[0],
             // which might be past the end of the buffer;
-            // also skips some useless accounting
+             // also skips some useless accounting
             else if (actualBits == 0) return 0;
         }
 
         // Look current byte
-        int ret = buffer[pointer] >>> endBit;
+        int ret = (buffer[pointer] & 0xff) >>> endBit;
         // Look more bytes if needed
         if (actualBits > 8) {
-            ret |= buffer[pointer + 1] << (8 - endBit);
+            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
             if (actualBits > 16) {
-                ret |= buffer[pointer + 2] << (16 - endBit);
+                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
                 if (actualBits > 24) {
-                    ret |= buffer[pointer + 3] << (24 - endBit);
+                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
                     if (actualBits > 32 && endBit != 0) {
-                        ret |= buffer[pointer + 4] << (32 - endBit);
+                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
                     }
                 }
             }
@@ -424,13 +424,13 @@ public class Buffer {
     /**
      * Get internal buffer
      */
-    public byte[] getBuffer() {
+    public byte[] buffer() {
         return buffer;
     }
 
     // ----- Static Write Copy ----- //
 
-    public static void writeCopy(final Buffer source, final Buffer target, final int bits, final boolean msb) {
+    public static void writeCopy(final Buffer target, final byte[] source, final int bits, final boolean msb) {
         final int validBytes = bits / 8;
         final int actualBits = bits - validBytes * 8;
         final int pBytes = (target.endBit + bits) / 8;
@@ -449,12 +449,12 @@ public class Buffer {
         if (target.endBit > 0) {
             // unaligned copy, do it
             for (int i = 0; i < validBytes; i++) {
-                if (msb) target.writeB(source.buffer[i], 8);
-                else target.write(source.buffer[i], 8);
+                if (msb) target.writeB(source[i], 8);
+                else target.write(source[i], 8);
             }
         } else {
             // aligned block copy
-            System.arraycopy(source.buffer, 0, target.buffer, target.pointer, validBytes);
+            System.arraycopy(source, 0, target.buffer, target.pointer, validBytes);
             target.pointer += validBytes;
             target.endByte += validBytes;
             target.buffer[target.pointer] = 0x0;
@@ -462,8 +462,8 @@ public class Buffer {
 
         // copy trailing bits
         if (actualBits > 0) {
-            if (msb) target.writeB(source.buffer[validBytes] >>> (8 - actualBits), actualBits);
-            else target.write(source.buffer[validBytes], actualBits);
+            if (msb) target.writeB(source[validBytes] >>> (8 - actualBits), actualBits);
+            else target.write(source[validBytes], actualBits);
         }
     }
 }

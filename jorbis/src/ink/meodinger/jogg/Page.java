@@ -124,6 +124,7 @@ public class Page {
 
     public int packets() {
         // todo
+        return 0;
     }
 
     /**
