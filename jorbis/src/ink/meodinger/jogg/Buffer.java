@@ -63,13 +63,6 @@ public class Buffer {
         if (bits < 8) write(0, bits);
     }
 
-    /*
-    public void writeAlignB() {
-        final int bits = 8 - endBit;
-        if (bits < 8) writeB(0, bits);
-    }
-     */
-
     /**
      * Clear buffer
      */
@@ -134,41 +127,6 @@ public class Buffer {
         pointer += actualBits / 8; // equal to endByte
         endByte += actualBits / 8; // endByte index
         endBit   = actualBits & 7; // endBit range is 0 -> 7
-    }
-
-    public void writeB(final int value, final int bits) {
-        final int mask = MASK[bits];
-
-        if (endByte + 4 >= storage) {
-            final int newStorage = storage + BUFFER_INCREMENT;
-            final byte[] newBuffer = new byte[newStorage];
-
-            System.arraycopy(buffer, 0, newBuffer, 0, storage);
-            buffer = newBuffer;
-            storage = newStorage;
-        }
-
-        final int validValue = value & mask;
-        final int actualBits = bits + endBit;
-
-        buffer[pointer] |= (byte) (validValue >>> (24 + endBit));
-        if (actualBits >= 8) {
-            buffer[pointer + 1] = (byte) (validValue >>> (16 + endBit));
-            if (actualBits >= 16) {
-                buffer[pointer + 2] = (byte) (validValue >>> (8 + endBit));
-                if (actualBits >= 24) {
-                    buffer[pointer + 3] = (byte) (validValue >>> (endBit));
-                    if (actualBits >= 32) {
-                        if (endBit > 0) buffer[pointer + 4] = (byte) (validValue << (8 - endBit));
-                        else buffer[pointer + 4] = 0;
-                    }
-                }
-            }
-        }
-
-        pointer += actualBits / 8;
-        endByte += actualBits / 8;
-        endBit   = actualBits & 7;
     }
 
     // ----- Read ----- //
@@ -252,46 +210,6 @@ public class Buffer {
         ret &= mask;
 
         // Update state
-        pointer += actualBits / 8;
-        endByte += actualBits / 8;
-        endBit   = actualBits & 7;
-
-        return ret;
-    }
-
-    /**
-     * ? not clear
-     * @param bits length of bits to read
-     * @return bits as Int
-     */
-    public int readB(final int bits) {
-        final int mask = 32 - bits;
-        final int actualBits = bits + endBit;
-
-        if (endByte + 4 >= storage) {
-            if (endByte + ((actualBits + 7) >> 3 ) > storage) {
-                pointer = storage - 1; // ?? pointer = NULL
-                endByte = storage;
-                endBit  = 1;
-                return -1;
-            } else if (actualBits == 0) return 0;
-        }
-
-        int ret = (buffer[pointer] & 0xff) >>> endBit;
-        if (actualBits > 8) {
-            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
-            if (actualBits > 16) {
-                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
-                if (actualBits > 24) {
-                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
-                    if (actualBits > 32 && endBit != 0) {
-                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
-                    }
-                }
-            }
-        }
-        ret = (ret >>> (mask >> 1)) >>> ((mask + 1) >> 1);
-
         pointer += actualBits / 8;
         endByte += actualBits / 8;
         endBit   = actualBits & 7;
@@ -430,7 +348,7 @@ public class Buffer {
 
     // ----- Static Write Copy ----- //
 
-    public static void writeCopy(final Buffer target, final byte[] source, final int bits, final boolean msb) {
+    public static void writeCopy(final Buffer target, final byte[] source, final int bits) {
         final int validBytes = bits / 8;
         final int actualBits = bits - validBytes * 8;
         final int pBytes = (target.endBit + bits) / 8;
@@ -448,10 +366,7 @@ public class Buffer {
         // copy whole octets
         if (target.endBit > 0) {
             // unaligned copy, do it
-            for (int i = 0; i < validBytes; i++) {
-                if (msb) target.writeB(source[i], 8);
-                else target.write(source[i], 8);
-            }
+            for (int i = 0; i < validBytes; i++) target.write(source[i], 8);
         } else {
             // aligned block copy
             System.arraycopy(source, 0, target.buffer, target.pointer, validBytes);
@@ -461,9 +376,6 @@ public class Buffer {
         }
 
         // copy trailing bits
-        if (actualBits > 0) {
-            if (msb) target.writeB(source[validBytes] >>> (8 - actualBits), actualBits);
-            else target.write(source[validBytes], actualBits);
-        }
+        if (actualBits > 0) target.write(source[validBytes], actualBits);
     }
 }

@@ -147,7 +147,6 @@ public class BufferTest {
 
             if (tBit == 1) assertEquals("read incorrect single bit value", b[i] & MASK[tBit], r.readOne());
             else assertEquals("read incorrect value", b[i] & MASK[tBit], r.read(tBit));
-            // assertEquals("readB incorrect value", b[i] & MASK[tBit], r.readB(tBit));
         }
         assertEquals("leftover bytes after read", r.bytes(), bytes);
     }
@@ -169,7 +168,7 @@ public class BufferTest {
         srcBytes = srcWrite.bytes();
 
         // Prefill
-        Buffer.writeCopy(dstWrite, srcBuf, prefill, false);
+        Buffer.writeCopy(dstWrite, srcBuf, prefill);
 
         // Check buffers; verify end byte masking
         dstBuf = dstWrite.buffer();
@@ -190,7 +189,7 @@ public class BufferTest {
         }
 
         // Second copy
-        Buffer.writeCopy(dstWrite, srcBuf, copy, false);
+        Buffer.writeCopy(dstWrite, srcBuf, copy);
 
         // Check buffers; verify end byte masking
         dstBuf = dstWrite.buffer();
@@ -223,22 +222,26 @@ public class BufferTest {
     }
 
     @Test
-    public void testMain() {
-        byte[] buffer;
-        int bytes, i, j;
-
+    public void smallPreClippedPacking() {
         o.writeInit();
-
-        System.out.print("\nSmall pre-clipped packing (LSb): ");
+        System.out.print("Small pre-clipped packing (LSb): ");
         clipTest(testBuffer1, test1Size, 0, one, oneSize);
-        System.out.print("ok");
+        System.out.println("ok");
+    }
 
-        System.out.print("\nLarge pre-clipped packing (LSb): ");
+    @Test
+    public void largePreClippedPacking() {
+        o.writeInit();
+        System.out.print("Large pre-clipped packing (LSb): ");
         clipTest(testBuffer2, test2Size, 0, three, threeSize);
-        System.out.print("ok");
+        System.out.println("ok");
+    }
 
-        System.out.print("\nNull bit call (LSb): ");
+    @Test
+    public void nullBitCall() {
+        o.writeInit();
+        System.out.print("Null bit call (LSb): ");
         clipTest(testBuffer3, test3Size, 0, two, twoSize);
-        System.out.print("ok");
+        System.out.println("ok");
     }
 }
