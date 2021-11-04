@@ -223,25 +223,135 @@ public class BufferTest {
 
     @Test
     public void smallPreClippedPacking() {
-        o.writeInit();
         System.out.print("Small pre-clipped packing (LSb): ");
+
+        o.writeInit();
         clipTest(testBuffer1, test1Size, 0, one, oneSize);
+
         System.out.println("ok");
     }
 
     @Test
     public void largePreClippedPacking() {
-        o.writeInit();
         System.out.print("Large pre-clipped packing (LSb): ");
+
+        o.writeInit();
         clipTest(testBuffer2, test2Size, 0, three, threeSize);
+
         System.out.println("ok");
     }
 
     @Test
     public void nullBitCall() {
-        o.writeInit();
         System.out.print("Null bit call (LSb): ");
+
+        o.writeInit();
         clipTest(testBuffer3, test3Size, 0, two, twoSize);
+
         System.out.println("ok");
     }
+
+    @Test
+    public void _32bitPreClippedPacking() {
+        System.out.print("32 bit pre-clipped packing (LSb): ");
+
+        o.writeInit();
+        for (int i = 0; i < test2Size; i++) o.write(large[i], 32);
+        byte[] buffer = o.buffer();
+        int bytes = o.bytes();
+
+        r.readInit(buffer, bytes);
+        for (int i = 0; i < test2Size; i++) {
+            assertNotEquals("out of data. failed", -1, r.look(32));
+            assertEquals("read incorrect value", large[i], r.look(32));
+            r.advance(32);
+        }
+        assertEquals("", bytes, r.bytes());
+
+        System.out.println("ok");
+    }
+
+    @Test
+    public void smallUnClippedPacking() {
+        System.out.print("Small un-clipped packing (LSb): ");
+
+        o.writeInit();
+        clipTest(testBuffer1, test1Size, 7, four, fourSize);
+
+        System.out.println("ok");
+    }
+
+    @Test
+    public void largeUnClippedPacking() {
+        System.out.print("Large pre-clipped packing (LSb): ");
+
+        o.writeInit();
+        clipTest(testBuffer2, test2Size, 17, five, fiveSize);
+
+        System.out.println("ok");
+    }
+
+    @Test
+    public void singleBitUnClippedPacking() {
+        System.out.print("Single bit un-clipped packing (LSb): ");
+
+        o.writeInit();
+        clipTest(testBuffer3, test3Size, 1, six, sixSize);
+
+        System.out.println("ok");
+    }
+
+    @Test
+    public void readPastEnd() {
+        System.out.print("Testing read past end (LSb): ");
+
+        r.readInit(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }, 8);
+        for (int i = 0; i < 64; i++) assertEquals("failed; got -1 prematurely", 0, r.read(1));
+        assertEquals("failed; look past end without -1", -1, r.look(1));
+        assertEquals("failed; read past end without -1", -1, r.read(1));
+
+        r.readInit(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }, 8);
+        assertEquals("failed 2; got -1 prematurely", 0, r.read(30));
+        assertEquals("failed 2; got -1 prematurely", 0, r.read(16));
+        assertEquals("failed 3; got -1 prematurely", 0, r.look(18));
+        assertEquals("failed; read past end without -1", -1, r.look(19));
+        assertEquals("failed; read past end without -1", -1, r.look(32));
+
+        o.writeClear();
+
+        System.out.println("ok");
+    }
+
+    @Test
+    public void alignedWriteCopies() {
+        int BUFFER_INCREMENT = 256;
+
+        System.out.print("Testing aligned write-copies (LSb): ");
+
+        for (int i = 0; i < 71; i++)
+            for (int j = 0; j < 5; j ++)
+                copyTest(j * 8, i);
+        for (int i = BUFFER_INCREMENT * 8 - 71; i < BUFFER_INCREMENT * 8 + 71; i ++)
+            for (int j = 0; j < 5; j++)
+                copyTest(j * 8, i);
+
+        System.out.println("ok");
+    }
+
+    @Test
+    public void unAlignedWriteCopies() {
+        int BUFFER_INCREMENT = 256;
+
+        System.out.print("Testing unaligned write-copies (LSb): ");
+
+        for (int i = 0; i < 71; i++)
+            for (int j = 1; j < 40; j ++)
+                if ((j & 0x7) != 0) copyTest(j, i);
+        for (int i = BUFFER_INCREMENT * 8 - 71; i < BUFFER_INCREMENT * 8 + 71; i ++)
+            for (int j = 1; j < 40; j++)
+                if ((j & 0x7) != 0) copyTest(j, i);
+
+        System.out.println("ok");
+    }
+
 }
