@@ -28,6 +28,12 @@ public class Buffer {
      * Java always use Little-endian, so we only need LSb methods of libogg.
      */
 
+    /*
+     * Something about err handling when value > Int.MAX_VALUE
+     *
+     * Please see LINE-120
+     */
+
     private static final int BUFFER_INCREMENT = 256;
 
     /**
@@ -57,6 +63,9 @@ public class Buffer {
      * Initialize buffer
      */
     public void writeInit() {
+        endByte = 0;
+        endBit = 0;
+
         buffer = new byte[BUFFER_INCREMENT];
         buffer[0] = 0x0;
 
@@ -68,10 +77,10 @@ public class Buffer {
         final int _endBytes = bits >> 3;
         final int _endBit = bits - _endBytes * 8;
 
-        buffer[_endBit] &= MASK[_endBit];
         pointer = _endBytes;
         endByte = _endBytes;
         endBit  = _endBit;
+        buffer[pointer] &= MASK[_endBit];
     }
 
     public void writeAlign() {
@@ -84,6 +93,11 @@ public class Buffer {
      */
     public void writeClear() {
         buffer = null;
+    }
+
+    @Deprecated(forRemoval = true)
+    public int writeCheck() {
+        return 0;
     }
 
     /**
@@ -100,15 +114,24 @@ public class Buffer {
     /**
      * Write bits to buffer
      * @param value bits to write as int
-     * @param bits  length of value
+     * @param bits  length of value (max = 32)
      */
     public void write(final int value, final int bits) {
+        // if (bits < 0 || bits > 32) { /* err */ }
+        // We don't need to check this, err will occur when get mask
+        // The same to next storage check and others
+        // But its will be nice to preserve the `endByte >= storage - 4`
+        // and others, make the code the same as the C code of libogg
+
         // Mask is set here in case of bits changes
         final int mask = MASK[bits];
 
         // Buffer cannot contain all bits, increase buffer length
-        // +4 because length of int is 32 (4 * 8 byte -> 32 bits)
-        if (endByte + 4 >= storage) {
+        // enByte + 4 because length of int is 32 (4 * 8 byte -> 32 bits)
+        // use -4 in case of endByte + 4 > Int.MAX_VALUE
+        if (endByte >= storage - 4) {
+            // if (storage > Integer.MAX_VALUE - BUFFER_INCREMENT) { /* err */ }
+
             final int newStorage = storage + BUFFER_INCREMENT;
             final byte[] newBuffer = new byte[newStorage];
 
@@ -195,8 +218,8 @@ public class Buffer {
         final int actualBits = bits + endBit;
 
         // End of buffer encountered
-        if (endByte + 4 >= storage) {
-            if (endByte + ((actualBits + 7) >> 3) > storage) {
+        if (endByte >= storage - 4) {
+            if (endByte > (storage - ((actualBits + 7) >> 3))) {
                 // If really read out of range, return -1
                 pointer = storage - 1; // ?? pointer = NULL
                 endByte = storage;
@@ -278,8 +301,8 @@ public class Buffer {
         final int mask = MASK[bits];
         final int actualBits = bits + endBit;
 
-        if (endByte + 4 >= storage) {
-            if (endByte + ((actualBits + 7) >> 3) > storage) return -1;
+        if (endByte >= storage - 4) {
+            if (endByte > (storage - ((actualBits + 7) >> 3))) return -1;
             // special case to avoid reading b->ptr[0],
             // which might be past the end of the buffer;
              // also skips some useless accounting

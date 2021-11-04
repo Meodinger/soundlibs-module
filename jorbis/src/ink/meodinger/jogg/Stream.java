@@ -21,11 +21,11 @@ public class Stream {
     /**
      * Data from packet bodies
      */
-    private byte[] bodyData = new byte[INIT_DATA_STORAGE];
+    private byte[] bodyData = null;
     /**
      * Storage allocated for bodies in bytes (filled or unfilled)
      */
-    private int bodyStorage = INIT_DATA_STORAGE;
+    private int bodyStorage = 0;
     /**
      * Amount of storage filled with stored packet bodies
      */
@@ -39,16 +39,16 @@ public class Stream {
      * String of lacing values for the packet segments within the current page
      * Each value is a byte, indicating packet segment length.
      */
-    private int[] lacingValues = new int[INIT_VALUES_STORAGE];
+    private int[] lacingValues = null;
     /**
      * Lacing values for the packet segments within the current page
      * Not compact this way, but it is simply coupled to the lacing fifo
      */
-    private long[] granuleValues = new long[INIT_VALUES_STORAGE];
+    private long[] granuleValues = null;
     /**
      * Total amount of storage (in bytes) allocated for storing lacing values
      */
-    private int lacingStorage = INIT_VALUES_STORAGE;
+    private int lacingStorage = 0;
     /**
      * Fill marker for the current vs. total allocated storage of lacing values for the page
      */
@@ -74,13 +74,13 @@ public class Stream {
     private int headerFill = 0;
 
     /**
-     * Marker set when the last packet of the logical bitstream has been buffered
-     */
-    public int eos = 0;
-    /**
      * Marker set after we have written the first page in the logical bitstream
      */
     public int bos = 0;
+    /**
+     * Marker set when the last packet of the logical bitstream has been buffered
+     */
+    public int eos = 0;
     /**
      * Serial number of this logical bitstream
      */
@@ -113,6 +113,15 @@ public class Stream {
      * @param serialNo Stream serial number
      */
     public void init(int serialNo) {
+        bodyStorage = INIT_DATA_STORAGE;
+        lacingStorage = INIT_VALUES_STORAGE;
+
+        bodyData = new byte[INIT_DATA_STORAGE];
+        lacingValues = new int[INIT_VALUES_STORAGE];
+        granuleValues = new long[INIT_VALUES_STORAGE];
+
+        // other fields already set to 0
+
         Arrays.fill(bodyData, (byte) 0);
         Arrays.fill(lacingValues, 0);
         Arrays.fill(granuleValues, 0);
@@ -127,8 +136,23 @@ public class Stream {
      */
     public void clear() {
         bodyData = null;
-        lacingValues = null;
+        bodyStorage = 0;
+        bodyFill = 0;
+        bodyReturned = 0;
+
         granuleValues = null;
+        lacingValues = null;
+        lacingStorage = 0;
+        lacingFill = 0;
+        lacingReturned = 0;
+        lacingPacket = 0;
+
+        bos = 0;
+        eos = 0;
+        serialNo = 0;
+        pageNo = 0;
+        packetNo = 0;
+        granulePos = 0;
     }
 
     public void reset() {
@@ -153,10 +177,14 @@ public class Stream {
         // todo
     }
 
-    // destroy() is not needed (same as clear())
+    @Deprecated(forRemoval = true)
+    public int destroy() {
+        clear();
+        return 0;
+    }
 
+    @Deprecated(forRemoval = true)
     public int check() {
-        // todo
         return 0;
     }
 
@@ -164,18 +192,26 @@ public class Stream {
         return eos;
     }
 
-    private void bodyExpand(int needed) {
-        if (bodyStorage <= bodyFill + needed) {
-            bodyStorage += (needed + 1024);
+    private int bodyExpand(int needed) {
+        if (bodyStorage - needed <= bodyFill) {
+            if (bodyStorage > Integer.MAX_VALUE - needed) return -1;
+
+            bodyStorage += needed;
+            if (bodyStorage < Integer.MAX_VALUE - 1024) bodyStorage += 1024;
+
             byte[] temp = new byte[bodyStorage];
             System.arraycopy(bodyData, 0, temp, 0, bodyData.length);
             bodyData = temp;
         }
+        return 0;
     }
 
-    private void lacingExpand(int needed) {
-        if (lacingStorage <= lacingFill + needed) {
-            lacingStorage += (needed + 32);
+    private int lacingExpand(int needed) {
+        if (lacingStorage - needed <= lacingFill) {
+            if (lacingStorage > Integer.MAX_VALUE - needed) return -1;
+
+            lacingStorage += needed;
+            if (lacingStorage < Integer.MAX_VALUE - 32) lacingStorage += 32;
 
             int[] tempLacing = new int[lacingStorage];
             System.arraycopy(lacingValues, 0, tempLacing, 0, lacingValues.length);
@@ -185,14 +221,66 @@ public class Stream {
             System.arraycopy(granuleValues, 0, tempGranules, 0, granuleValues.length);
             granuleValues = tempGranules;
         }
+        return 0;
     }
 
     // ----- Encode & Decode ----- //
 
-    public int bytesIn(byte[] inputs, int eos, long granulePos) {
-        // todo
-        return 0;
+    public int bytesIn(byte[][] inputs, int eos, long granulePos) {
+        // if (check() != 0) return -1;
+        if (inputs == null) return 0;
 
+        int bytes = 0;
+
+        for (byte[] input : inputs) {
+            int length = input.length;
+            // if (_len > Integer.MAX_VALUE) return -1;
+            if (bytes > Integer.MAX_VALUE - length) return -1;
+            bytes += length;
+        }
+        final int lacing_values = bytes / 255 + 1;
+
+        if (bodyReturned != 0) {
+            // Advance packet data according to the bodyReturned pointer
+            // We had to keep it around to return a pointer into the buffer
+            // last call
+            bodyFill -= bodyReturned;
+            if (bodyFill != 0) System.arraycopy(bodyData, bodyReturned, bodyData, 0, bodyFill);
+            bodyReturned = 0;
+        }
+
+        // Make sure we have the buffer storage
+        if(bodyExpand(bytes) != 0 || lacingExpand(lacing_values) != 0) return -1;
+
+        // Copy in the submitted packet. Yes, the copy is a waste; this is
+        // the liability of overly clean abstraction for the time being.
+        // It will actually be fairly easy to eliminate the extra copy
+        // in the future
+        for (byte[] input : inputs) {
+            int length = input.length;
+            System.arraycopy(input, 0, bodyData, bodyFill, length);
+            bodyFill += length;
+        }
+
+        // Store lacing values for this packet
+        for (int i = 0; i < lacing_values - 1; i++) {
+            lacingValues[lacingFill + i] = 255;
+            granuleValues[lacingFill + i] = this.granulePos;
+        }
+        lacingValues[lacing_values - 1] = bytes % 255;
+        granuleValues[lacing_values - 1] = granulePos;
+        this.granulePos = granulePos;
+
+        // Flag the first segment as the beginning of the packet
+        lacingValues[lacingFill] |= 0x0100;
+        lacingFill += lacing_values;
+
+        // For the sake of completeness
+        packetNo++;
+
+        if (eos != 0) this.eos = 1;
+
+        return 0;
     }
 
     /**

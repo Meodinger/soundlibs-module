@@ -52,7 +52,17 @@ public class Packet {
      */
     public long packetNo = 0;
 
+    /**
+     * Clear data in Packet
+     */
     public void clear() {
-        // todo
+        data = null;
+        pointer = 0;
+        bytes = 0;
+
+        bos = 0;
+        eos = 0;
+        granulePos = 0;
+        packetNo = 0;
     }
 }

@@ -122,9 +122,31 @@ public class Page {
                 | ((headerBase[headerPointer + 21] & 0xff) << 24);
     }
 
+    /* NOTE:
+       If a page consists of a packet begun on a previous page, and a new
+       packet begun (but not completed) on this page, the return will be:
+         ogg_page_packets(page)   ==1,
+         ogg_page_continued(page) !=0
+
+       If a page happens to be a single packet that was begun on a
+       previous page, and spans to the next page (in the case of a three or
+       more page packet), the return will be:
+         ogg_page_packets(page)   ==0,
+         ogg_page_continued(page) !=0
+    */
+    /**
+     * Return the number of packets that are completed on this page
+     * If the leading packet is begun on a previous page, but ends on
+     * this page, it's counted
+     */
     public int packets() {
-        // todo
-        return 0;
+        int count = 0, n = headerBase[headerPointer + 26];
+
+        for (int i = 0; i < n; i++)
+            if ((headerBase[headerPointer + 27 + i] & 0xff) < 255)
+                count++;
+
+        return count;
     }
 
     /**
@@ -133,6 +155,14 @@ public class Page {
     public void checksum() {
         int crc_reg = 0;
 
+        // safety; needed for API behavior, but not framing code
+        headerBase[headerPointer + 22] = 0;
+        headerBase[headerPointer + 23] = 0;
+        headerBase[headerPointer + 24] = 0;
+        headerBase[headerPointer + 25] = 0;
+
+        // CRC code copied from `com.jcraft.jogg.Page`
+        // Code in libogg is so hard to read
         for (int i = 0; i < headerBytes; i++) {
             crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
         }
@@ -140,10 +170,10 @@ public class Page {
             crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
         }
 
-        headerBase[headerPointer + 22] = (byte) crc_reg;
-        headerBase[headerPointer + 23] = (byte) (crc_reg >>> 8);
-        headerBase[headerPointer + 24] = (byte) (crc_reg >>> 16);
-        headerBase[headerPointer + 25] = (byte) (crc_reg >>> 24);
+        headerBase[headerPointer + 22] = (byte)  (crc_reg         & 0xff) ;
+        headerBase[headerPointer + 23] = (byte) ((crc_reg >>> 8)  & 0xff);
+        headerBase[headerPointer + 24] = (byte) ((crc_reg >>> 16) & 0xff);
+        headerBase[headerPointer + 25] = (byte) ((crc_reg >>> 24) & 0xff);
     }
 
     /**
