@@ -8,6 +8,26 @@ package ink.meodinger.jogg;
 
 public class Buffer {
 
+    /*
+     * Something about MSb, LSb, Big-endian and Little-endian
+     *
+     * Big- and little-endian is about *byte* order in memory
+     * For example: an Integer 0x0066CCFF
+     *           Higher  ----->  Lower  (The lowest is the start byte)
+     *   Little-: 0xFF 0xCC 0x66 0x00   or  1111 1111 1100 1100 0110 0110 0000 0000
+     *   Big-   : 0x00 0x66 0xCC 0xFF   or  0000 0000 0110 0110 1100 1100 1111 1111
+     *
+     * MSb and LSb is about *bit* in bytes
+     * For example: bytes 0xFF 0xCC 0x66 0x00
+     *        0b0000_0000
+     *   LSb:           ^ of 0x00
+     *        0b1111_1111
+     *   MSb:   ^         of 0xFF
+     *
+     * In java, we don't need to care about byte order in memory.
+     * Java always use Little-endian, so we only need LSb methods of libogg.
+     */
+
     private static final int BUFFER_INCREMENT = 256;
 
     /**
@@ -22,10 +42,6 @@ public class Buffer {
             0x001fffff, 0x003fffff, 0x007fffff, 0x00ffffff,
             0x01ffffff, 0x03ffffff, 0x07ffffff, 0x0fffffff,
             0x1fffffff, 0x3fffffff, 0x7fffffff, 0xffffffff
-    };
-    private static final int[] MASK8 = { 0x00,
-            0x80, 0xc0, 0xe0, 0xf0,
-            0xf8, 0xfc, 0xfe, 0xff
     };
 
     private int endByte = 0;
