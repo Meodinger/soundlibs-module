@@ -109,68 +109,67 @@ public class Stream {
     // ----- Stream API ----- //
 
     /**
-     * Initialize the StreamState and assign the stream a given serial number
+     * Initialize the Stream and assign the stream a given serial number
      * @param serialNo Stream serial number
      */
     public void init(int serialNo) {
-        bodyStorage = INIT_DATA_STORAGE;
-        lacingStorage = INIT_VALUES_STORAGE;
+        this.bodyStorage = INIT_DATA_STORAGE;
+        this.lacingStorage = INIT_VALUES_STORAGE;
 
-        bodyData = new byte[INIT_DATA_STORAGE];
-        lacingValues = new int[INIT_VALUES_STORAGE];
-        granuleValues = new long[INIT_VALUES_STORAGE];
+        this.bodyData = new byte[INIT_DATA_STORAGE];
+        this.lacingValues = new int[INIT_VALUES_STORAGE];
+        this.granuleValues = new long[INIT_VALUES_STORAGE];
 
         // other fields already set to 0
 
-        Arrays.fill(bodyData, (byte) 0);
-        Arrays.fill(lacingValues, 0);
-        Arrays.fill(granuleValues, 0);
+        Arrays.fill(this.bodyData, (byte) 0);
+        Arrays.fill(this.lacingValues, 0);
+        Arrays.fill(this.granuleValues, 0);
 
         this.serialNo = serialNo;
     }
 
     /**
-     * Clear and free the internal memory used by StreamState,
+     * Clear and free the internal memory used by Stream,
      * but does not free the structure itself
      * It is safe to call clear() on the same structure more than once
      */
     public void clear() {
-        bodyData = null;
-        bodyStorage = 0;
-        bodyFill = 0;
-        bodyReturned = 0;
+        this.bodyData = null;
+        this.bodyStorage = 0;
+        this.bodyFill = 0;
+        this.bodyReturned = 0;
 
-        granuleValues = null;
-        lacingValues = null;
-        lacingStorage = 0;
-        lacingFill = 0;
-        lacingReturned = 0;
-        lacingPacket = 0;
+        this.granuleValues = null;
+        this.lacingValues = null;
+        this.lacingStorage = 0;
+        this.lacingFill = 0;
+        this.lacingReturned = 0;
+        this.lacingPacket = 0;
 
-        bos = 0;
-        eos = 0;
-        serialNo = 0;
-        pageNo = 0;
-        packetNo = 0;
-        granulePos = 0;
+        this.bos = 0;
+        this.eos = 0;
+        this.serialNo = 0;
+        this.pageNo = 0;
+        this.packetNo = 0;
+        this.granulePos = 0;
     }
 
     public void reset() {
-        bodyFill = 0;
-        bodyReturned = 0;
+        this.bodyFill = 0;
+        this.bodyReturned = 0;
 
-        lacingFill = 0;
-        lacingReturned = 0;
-        lacingPacket = 0;
+        this.lacingFill = 0;
+        this.lacingReturned = 0;
+        this.lacingPacket = 0;
 
-        headerFill = 0;
+        this.headerFill = 0;
 
-        eos = 0;
-        bos = 0;
-        pageNo = -1;
-        packetNo = 0;
-        granulePos = 0;
-
+        this.eos = 0;
+        this.bos = 0;
+        this.pageNo = -1;
+        this.packetNo = 0;
+        this.granulePos = 0;
     }
 
     public void reset(int serialNo) {
@@ -193,90 +192,109 @@ public class Stream {
     }
 
     private int bodyExpand(int needed) {
-        if (bodyStorage - needed <= bodyFill) {
-            if (bodyStorage > Integer.MAX_VALUE - needed) return -1;
+        if (this.bodyStorage - needed <= this.bodyFill) {
+            if (this.bodyStorage > Integer.MAX_VALUE - needed) {
+                clear();
+                return -1;
+            }
 
-            bodyStorage += needed;
-            if (bodyStorage < Integer.MAX_VALUE - 1024) bodyStorage += 1024;
+            int newBodyStorage = this.bodyStorage + needed;
+            if (newBodyStorage < Integer.MAX_VALUE - 1024) newBodyStorage += 1024;
 
-            byte[] temp = new byte[bodyStorage];
-            System.arraycopy(bodyData, 0, temp, 0, bodyData.length);
-            bodyData = temp;
+            byte[] newData = new byte[newBodyStorage];
+            System.arraycopy(this.bodyData, 0, newData, 0, this.bodyData.length);
+            this.bodyData = newData;
+            this.bodyStorage = newBodyStorage;
         }
         return 0;
     }
 
     private int lacingExpand(int needed) {
-        if (lacingStorage - needed <= lacingFill) {
-            if (lacingStorage > Integer.MAX_VALUE - needed) return -1;
+        if (this.lacingStorage - needed <= this.lacingFill) {
+            if (this.lacingStorage > Integer.MAX_VALUE - needed) {
+                clear();
+                return -1;
+            }
 
-            lacingStorage += needed;
-            if (lacingStorage < Integer.MAX_VALUE - 32) lacingStorage += 32;
+            int newStorage = this.lacingStorage + needed;
+            if (newStorage < Integer.MAX_VALUE - 32) newStorage += 32;
 
-            int[] tempLacing = new int[lacingStorage];
-            System.arraycopy(lacingValues, 0, tempLacing, 0, lacingValues.length);
-            lacingValues = tempLacing;
+            int[] newLacing = new int[newStorage];
+            System.arraycopy(this.lacingValues, 0, newLacing, 0, this.lacingValues.length);
+            this.lacingValues = newLacing;
 
-            long[] tempGranules = new long[lacingStorage];
-            System.arraycopy(granuleValues, 0, tempGranules, 0, granuleValues.length);
-            granuleValues = tempGranules;
+            long[] newGranules = new long[newStorage];
+            System.arraycopy(this.granuleValues, 0, newGranules, 0, this.granuleValues.length);
+            this.granuleValues = newGranules;
+
+            this.lacingStorage = newStorage;
         }
         return 0;
     }
 
     // ----- Encode & Decode ----- //
 
+    /**
+     * Submit data to the internal buffer of the framing engine
+     * @param inputs Array of data will be copied to Stream
+     * @return 0 success
+     *        -1 error
+     */
     public int bytesIn(byte[][] inputs, int eos, long granulePos) {
         // if (check() != 0) return -1;
-        if (inputs == null) return 0;
+        if (inputs == null || inputs.length == 0) return 0;
 
         int bytes = 0;
-
         for (byte[] input : inputs) {
             int length = input.length;
             // if (_len > Integer.MAX_VALUE) return -1;
             if (bytes > Integer.MAX_VALUE - length) return -1;
             bytes += length;
         }
-        final int lacing_values = bytes / 255 + 1;
+        final int lacingValues = bytes / 255 + 1;
 
-        if (bodyReturned != 0) {
+        if (this.bodyReturned != 0) {
             // Advance packet data according to the bodyReturned pointer
             // We had to keep it around to return a pointer into the buffer
             // last call
-            bodyFill -= bodyReturned;
-            if (bodyFill != 0) System.arraycopy(bodyData, bodyReturned, bodyData, 0, bodyFill);
-            bodyReturned = 0;
+            this.bodyFill -= this.bodyReturned;
+            if (this.bodyFill != 0) {
+                System.arraycopy(
+                        this.bodyData, this.bodyReturned,
+                        this.bodyData, 0,
+                        this.bodyFill
+                );
+            }
+            this.bodyReturned = 0;
         }
 
         // Make sure we have the buffer storage
-        if(bodyExpand(bytes) != 0 || lacingExpand(lacing_values) != 0) return -1;
+        if(bodyExpand(bytes) != 0 || lacingExpand(lacingValues) != 0) return -1;
 
-        // Copy in the submitted packet. Yes, the copy is a waste; this is
-        // the liability of overly clean abstraction for the time being.
-        // It will actually be fairly easy to eliminate the extra copy
-        // in the future
+        // Copy in the submitted packet
+        // Yes, the copy is a waste; this is the liability of overly clean abstraction for the time being.
+        // It will actually be fairly easy to eliminate the extra copy in the future
         for (byte[] input : inputs) {
             int length = input.length;
-            System.arraycopy(input, 0, bodyData, bodyFill, length);
-            bodyFill += length;
+            System.arraycopy(input, 0, this.bodyData, this.bodyFill, length);
+            this.bodyFill += length;
         }
 
         // Store lacing values for this packet
-        for (int i = 0; i < lacing_values - 1; i++) {
-            lacingValues[lacingFill + i] = 255;
-            granuleValues[lacingFill + i] = this.granulePos;
+        for (int i = 0; i < lacingValues - 1; i++) {
+            this.lacingValues[this.lacingFill + i] = 255;
+            this.granuleValues[this.lacingFill + i] = this.granulePos;
         }
-        lacingValues[lacing_values - 1] = bytes % 255;
-        granuleValues[lacing_values - 1] = granulePos;
+        this.lacingValues[this.lacingFill + lacingValues - 1] = bytes % 255;
+        this.granuleValues[this.lacingFill + lacingValues - 1] = granulePos;
         this.granulePos = granulePos;
 
         // Flag the first segment as the beginning of the packet
-        lacingValues[lacingFill] |= 0x0100;
-        lacingFill += lacing_values;
+        this.lacingValues[this.lacingFill] |= 0x0100;
+        this.lacingFill += lacingValues;
 
         // For the sake of completeness
-        packetNo++;
+        this.packetNo++;
 
         if (eos != 0) this.eos = 1;
 
@@ -288,58 +306,15 @@ public class Stream {
      * After this is called, more packets can be submitted, or pages can be written out
      *
      * In a typical encoding situation, this method should be used after filling a packet with data
-     * The data in the packet is copied into the internal storage managed by StreamState,
+     * The data in the packet is copied into the internal storage managed by Stream,
      * so the caller is free to alter the contents of packet after this call has returned
      *
-     * @param packet Packet will be copied to StreamState
-     * @return 0: success
-     *        -1: error (actually in java we never return -1)
+     * @param packet Packet will be copied to Stream
+     * @return 0 success
+     *        -1 error
      */
     public int packetIn(Packet packet) {
-        final int lacingValue = packet.bytes / 255 + 1;
-
-        if (bodyReturned != 0) {
-            // Advance packet data according to the bodyReturned pointer
-            // We had to keep it around to return a pointer into the buffer last call
-
-            bodyFill -= bodyReturned;
-            if (bodyFill != 0) {
-                System.arraycopy(bodyData, bodyReturned, bodyData, 0, bodyFill);
-            }
-            bodyReturned = 0;
-        }
-
-        // Make sure we have the buffer storage
-        bodyExpand(packet.bytes);
-        lacingExpand(lacingValue);
-
-        // Copy in the submitted packet
-        // Yes, the copy is a waste; this is the liability of overly clean abstraction for the time being
-        // It will actually be fairly easy to eliminate the extra copy in the future
-        //
-        // Note (Meodinger 2021/10/28) : I'll work on this in some time
-        System.arraycopy(packet.data, packet.pointer, bodyData, bodyFill, packet.bytes);
-        bodyFill += packet.bytes;
-
-        // Store lacing values for this packet
-        int i;
-        for (i = 0; i < lacingValue - 1; i++) {
-            lacingValues[lacingFill + i] = 255;
-            granuleValues[lacingFill + i] = granulePos;
-        }
-        lacingValues[lacingFill + i] = (packet.bytes) % 255;
-        granulePos = granuleValues[lacingFill + i] = packet.granulePos;
-
-        // Flag the first segment as the beginning of the packet
-        lacingValues[lacingFill] |= 0x0000_0100;
-        lacingFill += lacingValue;
-
-        // For the sake of completeness
-        packetNo++;
-
-        if (packet.eos != 0) eos = 1;
-
-        return 0;
+        return bytesIn(new byte[][] { packet.data }, packet.eos, packet.granulePos);
     }
 
     /**
@@ -357,9 +332,9 @@ public class Stream {
      * to limit the temporal latency of a variable bitrate stream.
      *
      * @param packet Destination packet
-     * @return 0: Insufficient data has accumulated to fill a page;
-     *        -1: An internal error occurred, in this case og is not modified
-     *         1: A page has been completed and returned
+     * @return 0 Insufficient data has accumulated to fill a page;
+     *        -1 An internal error occurred, in this case og is not modified
+     *         1 A page has been completed and returned
      */
     public int packetOut(Packet packet) {
         // The last part of decode. We have the stream broken into packet segments
@@ -423,8 +398,8 @@ public class Stream {
      * Internally, this method breaks the page into packet segments in preparation for
      * outputting a valid packet to the codec decoding layer
      * @param page Page to be submitted to bitstream
-     * @return 0: success
-     *        -1: error
+     * @return 0 success
+     *        -1 error
      */
     public int pageIn(Page page) {
         final byte[] headerBase = page.headerBase;
@@ -553,8 +528,8 @@ public class Stream {
      * of a variable bitrate stream.
      *
      * @param page Destination page
-     * @return 0: success
-     *        -1: error (actually in java we never return -1)
+     * @return 0 success
+     *        -1 error (actually in java we never return -1)
      */
     public int pageOut(Page page) {
         if ((eos != 0 && lacingFill != 0)    // Done, now flush
@@ -574,6 +549,143 @@ public class Stream {
     }
 
     /**
+     * Conditionally flush a page
+     * @param page Destination
+     * @param force 0 will only flush nominal-size;
+     *              1 forces us to flush a page regardless of page size
+     *              so long as there's any data available at all
+     * @param nFill Packet data watermark in bytes
+     * @return 0 done; -1 error
+     */
+    public int flush_i(Page page, int force, int nFill) {
+        int i;
+        final int maxValues = Math.min(255, this.lacingFill);
+
+        int values;
+        int bytes = 0;
+        long acc = 0;
+        long granulePos = -1;
+
+        // if (check() != 0) return -1;
+        if (maxValues == 0) return 0;
+
+        // Construct a page
+        // Decide how many segments to include
+
+        // If this is the initial header case, the first page must
+        // only include the initial header packet
+        if (this.bos == 0) {
+            granulePos = 0;
+            for (values = 0; values < maxValues; values++) {
+                if ((this.lacingValues[values] & 0xff) < 255) {
+                    values++;
+                    break;
+                }
+            }
+        } else {
+            // The extra packets_done, packet_just_done logic here attempts to do two things:
+            //     1) Don't unnecessarily span pages
+            //     2) Unless necessary, don't flush pages if there are less than four packets on them;
+            //        this expands page size to reduce unnecessary overhead if incoming packets are large
+            // These are not necessary behaviors, just 'always better than naive flushing' without
+            // requiring an application to explicitly request a specific optimized behavior
+            // We'll want an explicit behavior setup pathway eventually as well
+            int packetsDone = 0;
+            int packetsJustDone = 0;
+            for (values = 0; values < maxValues; values++) {
+                if (acc > nFill && packetsJustDone >= 4) {
+                    force = 1;
+                    break;
+                }
+                acc += this.lacingValues[values] & 0xff;
+                if ((this.lacingValues[values] & 0xff) < 255) {
+                    granulePos = this.granuleValues[values];
+                    packetsJustDone = ++packetsDone;
+                } else {
+                    packetsJustDone = 0;
+                }
+            }
+            if (values == 255) force = 1;
+        }
+
+        if (force == 0) return 0;
+
+        // Construct the header in temp storage
+        System.arraycopy("OggS".getBytes(), 0, this.headerData, 0, 4);
+
+        // Stream structure version
+        this.headerData[4] = 0x00;
+
+        this.headerData[5] = 0x00;
+        // Continued packet flag?
+        if ((this.lacingValues[0] & 0x0100) == 0) this.headerData[5] |= 0b0001;
+        // First page flag?
+        if (this.bos == 0) headerData[5] |= 0b0010;
+        // Last page flag?
+        if (this.eos != 0 && this.lacingFill == values) this.headerData[5] |= 0b0100;
+        this.bos = 1;
+
+        // 64 bits of PCM position
+        for (i = 6; i < 14; i++) {
+            this.headerData[i] = (byte) (granulePos & 0xff);
+            granulePos >>= 8;
+        }
+
+        // 32 bits of stream serial number
+        int serialNo = this.serialNo;
+        for (i = 14; i < 18; i++) {
+            this.headerData[i] = (byte) (serialNo & 0xff);
+            serialNo >>= 8;
+        }
+
+        // 32 bits of page counter
+        // (we have both counter and page header because this val can roll over)
+        if (this.pageNo == -1) this.pageNo = 0; /* because someone called
+                                                   reset(); this would be a
+                                                   strange thing to do in an
+                                                   encoding stream, but it has
+                                                   plausible uses */
+        int pageNo = this.pageNo++;
+        for (i = 18; i < 22; i++) {
+            this.headerData[i] = (byte) (pageNo & 0xff);
+            pageNo >>= 8;
+        }
+
+        // zero for computation, filled in later
+        this.headerData[22] = 0;
+        this.headerData[23] = 0;
+        this.headerData[24] = 0;
+        this.headerData[25] = 0;
+
+        // segment table
+        this.headerData[26] = (byte) (values & 0xff);
+        for (i = 0; i < values; i++) {
+            bytes += this.headerData[27 + i] = (byte) (this.lacingValues[i] & 0xff);
+        }
+
+        // set pointers in the Page
+        page.headerBase = this.headerData;
+        page.headerPointer = 0;
+        page.headerBytes = this.headerFill = values + 27;
+        page.bodyBase = this.bodyData;
+        page.bodyPointer = this.bodyReturned;
+        page.bodyBytes = bytes;
+
+        // Advance the lacing data and set the bodyReturned pointer
+
+        this.lacingFill -= values;
+        System.arraycopy(this.lacingValues, values, this.lacingValues, 0, this.lacingFill * 4); // sizeof(int)
+        System.arraycopy(this.granuleValues, values, this.granuleValues, 0, this.lacingFill * 8); // sizeof(long)
+        bodyReturned += bytes;
+
+        // calculate the checksum
+        page.checksum();
+
+        // done
+        return 1;
+    }
+
+    /**
      * This will flush remaining packets into a page (returning nonzero),
      * even if there is not enough data to trigger a flush normally
      * (undersized page). If there are no packets or partial packets to
@@ -587,123 +699,21 @@ public class Stream {
      * unless you need to flush an undersized page in the middle of
      * a stream for some reason
      *
-     * @return 0: all packet data has already been flushed into pages, and there are no packets to put into the page.
-     *          | an StreamState has been cleared explicitly or implicitly due to an internal error
-     *      else: remaining packets have successfully been flushed into the page
+     * @return 0 all packet data has already been flushed into pages, and there are no packets to put into the page
+     *           A Stream has been cleared explicitly or implicitly due to an internal error
+     *      else remaining packets have successfully been flushed into the page
      */
     public int flush(Page page) {
-        final int maxValues = Math.min(lacingFill, 255);
-        int i, values;
-
-        int bytes = 0;
-        int acc = 0;
-        long _granulePos = granuleValues[0];
-
-        if (maxValues == 0) return 0;
-
-        // Construct a page
-        // Decide how many segments to include
-
-        // If this is the initial header case, the first page must only include
-        // the initial header packet
-        if (bos == 0) {
-            _granulePos = 0;
-            for (values = 0; values < maxValues; values++) {
-                if ((lacingValues[values] & 0xff) < 255) {
-                    values++;
-                    break;
-                }
-            }
-        } else {
-            for (values = 0; values < maxValues; values++) {
-                if (acc > 4096) break;
-                acc += (lacingValues[values] & 0xff);
-                _granulePos = granuleValues[values];
-            }
-        }
-
-        // Construct the header in temp storage
-
-        // Magic number
-        System.arraycopy("OggS".getBytes(), 0, headerData, 0, 4);
-
-        // Stream structure version
-        headerData[4] = 0x00;
-
-        headerData[5] = 0x00;
-        // Continued packet flag
-        if ((lacingValues[0] & 0x0100) == 0) headerData[5] |= 0b0001;
-        // First page flag
-        if (bos == 0) headerData[5] |= 0b0010;
-        // Last page flag
-        if (eos != 0 && lacingFill == values) headerData[5] |= 0b0100;
-
-        bos = 1;
-
-        // 64 bits of PCM position
-        for (i = 6; i < 14; i++) {
-            headerData[i] = (byte) _granulePos;
-            _granulePos >>>= 8;
-        }
-
-        // 32 bits of stream serial number
-        int _serialNo = serialNo;
-        for (i = 14; i < 18; i++) {
-            headerData[i] = (byte) _serialNo;
-            _serialNo >>>= 8;
-        }
-
-        // 32 bits of page counter
-        // (we have both counter and page header because this val can roll over)
-        if (pageNo == -1) pageNo = 0; /* because someone called
-                                         reset(); this would be a
-                                         strange thing to do in an
-                                         encoding stream, but it has
-                                         plausible uses */
-        int _pageNo = pageNo++;
-        for (i = 18; i < 22; i++) {
-            headerData[i] = (byte) _pageNo;
-            _pageNo >>>= 8;
-        }
-
-        // zero for computation, filled in later
-        headerData[22] = 0;
-        headerData[23] = 0;
-        headerData[24] = 0;
-        headerData[25] = 0;
-
-        // segment table
-        headerData[26] = (byte) values;
-        for (i = 0; i < values; i++) {
-            headerData[27 + i] = (byte) lacingValues[i];
-            bytes += (headerData[i + 27] & 0xff);
-        }
-
-        // set pointers in the Page
-        page.headerBase = headerData;
-        page.headerPointer = 0;
-        page.headerBytes = headerFill = values + 27;
-        page.bodyBase = bodyData;
-        page.bodyPointer = bodyReturned;
-        page.bodyBytes = bytes;
-
-        // Advance the lacing data and set the bodyReturned pointer
-
-        lacingFill -= values;
-        System.arraycopy(lacingValues, values, lacingValues, 0, lacingFill * 4);
-        System.arraycopy(granuleValues, values, granuleValues, 0, lacingFill * 8);
-        bodyReturned += bytes;
-
-        // calculate the checksum
-        page.checksum();
-
-        // done
-        return 1;
+        return flush_i(page, 1, 4096);
     }
 
+    /**
+     * @param page Destination page
+     * @param fill Packet data watermark in bytes
+     * @return 0 done; else error
+     */
     public int flushFill(Page page, int fill) {
-        // todo
-        return 0;
-
+        return flush_i(page, 1, fill);
     }
+
 }

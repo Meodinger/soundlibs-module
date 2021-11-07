@@ -31,7 +31,7 @@ public class Buffer {
     /*
      * Something about err handling when value > Int.MAX_VALUE
      *
-     * Please see LINE-120
+     * Please see LINE:130
      */
 
     private static final int BUFFER_INCREMENT = 256;
@@ -73,6 +73,11 @@ public class Buffer {
         storage = BUFFER_INCREMENT;
     }
 
+    /**
+     * Truncate an already written-to Buffer
+     * The Buffer must already be initialized for writing using `writeInit`
+     * @param bits Number of bits to keep in the buffer (size after truncation)
+     */
     public void writeTrunc(final int bits) {
         final int _endBytes = bits >> 3;
         final int _endBit = bits - _endBytes * 8;
@@ -83,6 +88,11 @@ public class Buffer {
         buffer[pointer] &= MASK[_endBit];
     }
 
+    /**
+     * Pad the Buffer with zeros out to the next byte boundary
+     * The Buffer must already be initialized for writing using `writeInit`
+     * Only 32 bits can be written at a time
+     */
     public void writeAlign() {
         final int bits = 8 - endBit;
         if (bits < 8) write(0, bits);
