@@ -278,13 +278,13 @@ public class Stream {
             int newStorage = this.lacingStorage + needed;
             if (newStorage < Integer.MAX_VALUE - 32) newStorage += 32;
 
-            int[] newLacing = new int[newStorage];
-            System.arraycopy(this.lacingValues, 0, newLacing, 0, this.lacingValues.length);
-            this.lacingValues = newLacing;
-
             long[] newGranules = new long[newStorage];
             System.arraycopy(this.granuleValues, 0, newGranules, 0, this.granuleValues.length);
             this.granuleValues = newGranules;
+
+            int[] newLacing = new int[newStorage];
+            System.arraycopy(this.lacingValues, 0, newLacing, 0, this.lacingValues.length);
+            this.lacingValues = newLacing;
 
             this.lacingStorage = newStorage;
         }
@@ -668,13 +668,13 @@ public class Stream {
         if (this.lacingReturned != 0) { // segment table
             if (this.lacingFill - this.lacingReturned != 0) {
                 System.arraycopy(
-                        this.lacingValues, this.lacingReturned,
-                        this.lacingValues , 0,
+                        this.granuleValues, this.lacingReturned,
+                        this.granuleValues, 0,
                         this.lacingFill - this.lacingReturned
                 );
                 System.arraycopy(
-                        this.granuleValues, this.lacingReturned,
-                        this.granuleValues, 0,
+                        this.lacingValues, this.lacingReturned,
+                        this.lacingValues , 0,
                         this.lacingFill - this.lacingReturned
                 );
             }
@@ -734,8 +734,8 @@ public class Stream {
         int saved = -1;
         while (segmentPointer < segments) {
             int val = headerBase[headerPointer + 27 + segmentPointer] & 0xff;
-            this.lacingValues[this.lacingFill] = val;
             this.granuleValues[this.lacingFill] = -1;
+            this.lacingValues[this.lacingFill] = val;
 
             if (newBos != 0) {
                 this.lacingValues[this.lacingFill] |= 0x0100;
