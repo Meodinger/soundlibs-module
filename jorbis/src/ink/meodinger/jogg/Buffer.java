@@ -11,13 +11,13 @@ public class Buffer {
     /*
      * Something about MSb, LSb, Big-endian and Little-endian
      *
-     * Big- and little-endian is about *byte* order in memory
+     * Big- and little-endian is about *byte* order in memory.
      * For example: an Integer 0x0066CCFF
      *           Higher  ----->  Lower  (The lowest is the start byte)
      *   Little-: 0xFF 0xCC 0x66 0x00   or  1111 1111 1100 1100 0110 0110 0000 0000
      *   Big-   : 0x00 0x66 0xCC 0xFF   or  0000 0000 0110 0110 1100 1100 1111 1111
      *
-     * MSb and LSb is about *bit* in bytes
+     * MSb and LSb is about *bit* in bytes.
      * For example: bytes 0xFF 0xCC 0x66 0x00
      *        0b0000_0000
      *   LSb:           ^ of 0x00
@@ -74,8 +74,8 @@ public class Buffer {
     }
 
     /**
-     * Truncate an already written-to Buffer
-     * The Buffer must already be initialized for writing using `writeInit`
+     * Truncate an already written-to Buffer.
+     * The Buffer must already be initialized for writing using `writeInit`.
      * @param bits Number of bits to keep in the buffer (size after truncation)
      */
     public void writeTrunc(final int bits) {
@@ -89,8 +89,8 @@ public class Buffer {
     }
 
     /**
-     * Pad the Buffer with zeros out to the next byte boundary
-     * The Buffer must already be initialized for writing using `writeInit`
+     * Pad the Buffer with zeros out to the next byte boundary.
+     * The Buffer must already be initialized for writing using `writeInit`.
      * Only 32 bits can be written at a time
      */
     public void writeAlign() {
@@ -128,17 +128,17 @@ public class Buffer {
      */
     public void write(final int value, final int bits) {
         // if (bits < 0 || bits > 32) { /* err */ }
-        // We don't need to check this, err will occur when get mask
-        // The same to next storage check and others
+        // We don't need to check this, err will occur when get mask.
+        // The same to next storage check and others.
         // But its will be nice to preserve the `endByte >= storage - 4`
-        // and others, make the code the same as the C code of libogg
+        // and others, make the code the same as the C code of libogg.
 
         // Mask is set here in case of bits changes
         final int mask = MASK[bits];
 
-        // Buffer cannot contain all bits, increase buffer length
-        // enByte + 4 because length of int is 32 (4 * 8 byte -> 32 bits)
-        // use -4 in case of endByte + 4 > Int.MAX_VALUE
+        // Buffer cannot contain all bits, increase buffer length.
+        // enByte + 4 because length of int is 32 (4 * 8 byte -> 32 bits).
+        // use -4 in case of endByte + 4 > Int.MAX_VALUE.
         if (endByte >= storage - 4) {
             // if (storage > Integer.MAX_VALUE - BUFFER_INCREMENT) { /* err */ }
 
@@ -238,7 +238,7 @@ public class Buffer {
             } else if (actualBits == 0) return 0;
             // special case to avoid reading b->ptr[0],
             // which might be past the end of the buffer;
-            // also skips some useless accounting
+            // also skips some useless accounting.
         }
 
         // Read current byte
@@ -315,7 +315,7 @@ public class Buffer {
             if (endByte > (storage - ((actualBits + 7) >> 3))) return -1;
             // special case to avoid reading b->ptr[0],
             // which might be past the end of the buffer;
-             // also skips some useless accounting
+            // also skips some useless accounting.
             else if (actualBits == 0) return 0;
         }
 

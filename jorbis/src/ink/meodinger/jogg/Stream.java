@@ -36,15 +36,15 @@ public class Stream {
     private int bodyReturned = 0;
 
     /**
-     * String of lacing values for the packet segments within the current page
-     * Each value is a byte, indicating packet segment length.
-     */
-    private int[] lacingValues = null;
-    /**
      * Lacing values for the packet segments within the current page
      * Not compact this way, but it is simply coupled to the lacing fifo
      */
     private long[] granuleValues = null;
+    /**
+     * String of lacing values for the packet segments within the current page
+     * Each value is a byte, indicating packet segment length.
+     */
+    private int[] lacingValues = null;
     /**
      * Total amount of storage (in bytes) allocated for storing lacing values
      */
@@ -66,7 +66,7 @@ public class Stream {
      * Temporary storage for page header during encode process
      * while the header is being created
      */
-    private final byte[] headerData = new byte[HEADER_WORKSPACE];
+    private byte[] headerData = null;
     /**
      * Fill marker for header storage allocation
      * Used during the header creation process
@@ -109,24 +109,37 @@ public class Stream {
     // ----- Stream API ----- //
 
     /**
-     * Initialize the Stream and assign the stream a given serial number
+     * Initialize a `Stream` and allocate appropriate memory in preparation for encoding or decoding.
+     * Also assigns the stream a given serial number.
      * @param serialNo Stream serial number
      */
     public void init(int serialNo) {
-        this.bodyStorage = INIT_DATA_STORAGE;
-        this.lacingStorage = INIT_VALUES_STORAGE;
-
         this.bodyData = new byte[INIT_DATA_STORAGE];
-        this.lacingValues = new int[INIT_VALUES_STORAGE];
-        this.granuleValues = new long[INIT_VALUES_STORAGE];
+        this.bodyStorage = INIT_DATA_STORAGE;
+        this.bodyFill = 0;
+        this.bodyReturned = 0;
 
-        // other fields already set to 0
+        this.granuleValues = new long[INIT_VALUES_STORAGE];
+        this.lacingValues = new int[INIT_VALUES_STORAGE];
+        this.lacingStorage = INIT_VALUES_STORAGE;
+        this.lacingFill = 0;
+        this.lacingReturned = 0;
+        this.lacingPacket = 0;
+
+        this.headerData = new byte[HEADER_WORKSPACE];
+        this.headerFill = 0;
+
+        this.bos = 0;
+        this.eos = 0;
+        this.serialNo = serialNo;
+        this.pageNo = 0;
+        this.packetNo = 0;
+        this.granulePos = 0;
 
         Arrays.fill(this.bodyData, (byte) 0);
-        Arrays.fill(this.lacingValues, 0);
         Arrays.fill(this.granuleValues, 0);
-
-        this.serialNo = serialNo;
+        Arrays.fill(this.lacingValues, 0);
+        Arrays.fill(this.headerData, (byte) 0);
     }
 
     /**
@@ -139,6 +152,9 @@ public class Stream {
         this.bodyStorage = 0;
         this.bodyFill = 0;
         this.bodyReturned = 0;
+
+        this.headerData = null;
+        this.headerFill = 0;
 
         this.granuleValues = null;
         this.lacingValues = null;
@@ -155,7 +171,12 @@ public class Stream {
         this.granulePos = 0;
     }
 
+    /**
+     * Set values in the `Stream` back to initial values.
+     */
     public void reset() {
+        // if (check() != 0) return -1;
+
         this.bodyFill = 0;
         this.bodyReturned = 0;
 
@@ -172,25 +193,58 @@ public class Stream {
         this.granulePos = 0;
     }
 
+    /**
+     * Set values in the `Stream` back to initial values.
+     * Additionally, it sets the stream serial number to the given value.
+     * @param serialNo New stream serial number to use
+     */
     public void reset(int serialNo) {
-        // todo
+        // if (check() != 0) return -1;
+
+        reset();
+        this.serialNo = serialNo;
     }
 
+    /**
+     * Frees the internal memory used by the `Stream` as well as itself.
+     * This method should be called when you are done working with an ogg stream.
+     * It can also be called to make sure that the struct does not exist.
+     * It calls free() on its argument, so if the `Stream` is not malloc()'d
+     * or will otherwise be freed by your own code, use ogg_stream_clear instead.
+     */
     @Deprecated(forRemoval = true)
     public int destroy() {
         clear();
         return 0;
     }
 
+    /**
+     * Check the error or readiness condition of a `Stream`.
+     * It is a safe practice to ignore unrecoverable errors (such as an internal error
+     * caused by a malloc() failure) returned by ogg stream synchronization calls.
+     * Should an internal error occur, the `Stream` will be cleared (equivalent to a call to `clear()`)
+     * and subsequent calls using this `Stream` will be noops. Error detection is then handled via
+     * a single call to `check()` at the end of the operational block.
+     * @return 0 for good; else for error
+     */
     @Deprecated(forRemoval = true)
     public int check() {
         return 0;
     }
 
-    public int eof() {
+    public int eos() {
+        // if (check() != 0) return 1;
+
         return eos;
     }
 
+    // ----- private api ----- //
+
+    /**
+     * Expand bodyData
+     * @param needed bytes needed
+     * @return 0 success; -1 error
+     */
     private int bodyExpand(int needed) {
         if (this.bodyStorage - needed <= this.bodyFill) {
             if (this.bodyStorage > Integer.MAX_VALUE - needed) {
@@ -209,6 +263,11 @@ public class Stream {
         return 0;
     }
 
+    /**
+     * Expand lacingValues and granuleValues
+     * @param needed bytes needed
+     * @return 0 success; -1 error
+     */
     private int lacingExpand(int needed) {
         if (this.lacingStorage - needed <= this.lacingFill) {
             if (this.lacingStorage > Integer.MAX_VALUE - needed) {
@@ -232,15 +291,12 @@ public class Stream {
         return 0;
     }
 
-    // ----- Encode & Decode ----- //
-
     /**
-     * Submit data to the internal buffer of the framing engine
+     * Submit data to the internal buffer of the framing engine.
      * @param inputs Array of data will be copied to Stream
-     * @return 0 success
-     *        -1 error
+     * @return 0 success; -1 error
      */
-    public int bytesIn(byte[][] inputs, int eos, long granulePos) {
+    private int bytesIn(byte[][] inputs, int eos, long granulePos) {
         // if (check() != 0) return -1;
         if (inputs == null || inputs.length == 0) return 0;
 
@@ -302,262 +358,17 @@ public class Stream {
     }
 
     /**
-     * Submit a packet to the bitstream for page encapsulation
-     * After this is called, more packets can be submitted, or pages can be written out
-     *
-     * In a typical encoding situation, this method should be used after filling a packet with data
-     * The data in the packet is copied into the internal storage managed by Stream,
-     * so the caller is free to alter the contents of packet after this call has returned
-     *
-     * @param packet Packet will be copied to Stream
-     * @return 0 success
-     *        -1 error
-     */
-    public int packetIn(Packet packet) {
-        return bytesIn(new byte[][] { packet.data }, packet.eos, packet.granulePos);
-    }
-
-    /**
-     * Form packets into pages
-     *
-     * In a typical encoding situation, this would be called after using packetIn() to
-     * submit data packets to the bitstream Internally, this method assembles
-     * the accumulated packet bodies into an Ogg page suitable for writing to a stream
-     * The method is typically called in a loop until there are no more pages ready for output
-     *
-     * This method will only return a page when a "reasonable" amount of packet data is available
-     * Normally this is appropriate since it limits the overhead of the Ogg page headers in the bitstream,
-     * and so calling pageOut() after packetIn() should be the common case. Call flush() if
-     * immediate page generation is desired. This may be occasionally necessary, for example,
-     * to limit the temporal latency of a variable bitrate stream.
-     *
-     * @param packet Destination packet
-     * @return 0 Insufficient data has accumulated to fill a page;
-     *        -1 An internal error occurred, in this case og is not modified
-     *         1 A page has been completed and returned
-     */
-    public int packetOut(Packet packet) {
-        // The last part of decode. We have the stream broken into packet segments
-        // Now we need to group them into packets (or return the out of sync markers)
-
-        int pointer = lacingReturned;
-        if (lacingPacket <= pointer) return 0;
-
-        if ((lacingValues[pointer] & 0x0000_0400) != 0) {
-            // We lost sync here, let the app know
-            lacingReturned++;
-
-            // We need to tell the codec there's a gap
-            // It might need to handle previous packet dependencies
-            packetNo++;
-
-            return -1;
-        }
-
-        // Gather the whole packet
-        // We'll have no holes or a partial packet
-        int size = lacingValues[pointer] & 0xff;
-        int bytes = 0;
-
-        packet.data = bodyData;
-        packet.pointer = bodyReturned;
-        packet.eos = lacingValues[pointer] & 0x0000_0200;
-        packet.bos = lacingValues[pointer] & 0x0000_0100;
-        bytes += size;
-
-        while (size == 255) {
-            int val = lacingValues[++pointer];
-            size = val & 0xff;
-            if ((val & 0x0000_0200) != 0) packet.eos = 0x0000_0200;
-            bytes += size;
-        }
-
-        packet.packetNo = packetNo;
-        packet.granulePos = granuleValues[pointer];
-        packet.bytes = bytes;
-
-        bodyReturned += bytes;
-        lacingReturned = pointer + 1;
-        // Gathering end here
-
-        packetNo++;
-        return 1;
-    }
-
-    public int packetPeek(Packet packet) {
-        // todo
-
-        return 0;
-    }
-
-    /**
-     * Add a complete page to the bitstream
-     *
-     * In a typical decoding situation, this method would be called after using pageOut() to create a valid Page
-     *
-     * Internally, this method breaks the page into packet segments in preparation for
-     * outputting a valid packet to the codec decoding layer
-     * @param page Page to be submitted to bitstream
-     * @return 0 success
-     *        -1 error
-     */
-    public int pageIn(Page page) {
-        final byte[] headerBase = page.headerBase;
-        int headerPointer = page.headerPointer;
-
-        final byte[] bodyBase = page.bodyBase;
-        int bodyPointer = page.bodyPointer;
-        int bodyBytes = page.bodyBytes;
-
-        final int _segments = headerBase[headerPointer + 26] & 0xff;
-        int segmentPointer = 0;
-
-        final int _version = page.version();
-        final int _continued = page.continued();
-        final long _granulePos = page.granulePos();
-        final int _serialNo = page.serialNo();
-        final int _pageNo = page.pageNo();
-        int _bos = page.bos();
-        int _eos = page.eos();
-
-        // Cleanup 'returned data'
-        if (bodyReturned != 0) { // body data
-            bodyFill -= bodyReturned;
-            if (bodyFill != 0) {
-                System.arraycopy(bodyData, bodyReturned, bodyData, 0, bodyFill);
-            }
-            bodyReturned = 0;
-        }
-        if (lacingReturned != 0) { // segment table
-            if (lacingFill - lacingReturned != 0) {
-                System.arraycopy(lacingValues, lacingReturned, lacingValues , 0, lacingFill - lacingReturned);
-                System.arraycopy(granuleValues, lacingReturned, granuleValues, 0, lacingFill - lacingReturned);
-            }
-            lacingFill -= lacingReturned;
-            lacingPacket -= lacingReturned;
-            lacingReturned = 0;
-        }
-
-        // check the serial number
-        if (_serialNo != serialNo) return -1;
-        if (_version > 0) return -1;
-
-        lacingExpand(_segments + 1);
-
-        // Are we in sequence?
-        if (_pageNo != pageNo) {
-            // Unroll previous partial packet (if any)
-            for (int i = lacingPacket; i < lacingFill; i++) {
-                bodyFill -= lacingValues[i] & 0xff;
-            }
-            lacingFill = lacingPacket;
-
-            // Make a note of dropped data in segment table
-            if (pageNo != -1) {
-                lacingValues[lacingFill++] = 0x0000_0400;
-                lacingPacket++;
-            }
-
-            // Are we a 'continued packet' page?
-            // If so, we'll need to skip some segments
-            if (_continued != 0) {
-                _bos = 0;
-                for (; segmentPointer < _segments; segmentPointer++) {
-                    int val = (headerBase[headerPointer + 27 + segmentPointer] & 0xff);
-                    bodyPointer += val;
-                    bodyBytes -= val;
-                    if (val < 255) {
-                        segmentPointer++;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (bodyBytes != 0) {
-            bodyExpand(bodyBytes);
-            System.arraycopy(bodyBase, bodyPointer, bodyData, bodyFill, bodyBytes);
-            bodyFill += bodyBytes;
-        }
-
-        int saved = -1;
-        while (segmentPointer < _segments) {
-            int val = (headerBase[headerPointer + 27 + segmentPointer] & 0xff);
-            lacingValues[lacingFill] = val;
-            granuleValues[lacingFill] = -1;
-
-            if (_bos != 0) {
-                lacingValues[lacingFill] |= 0x0000_0100;
-                _bos = 0;
-            }
-
-            if (val < 255) saved = lacingFill;
-
-            lacingFill++;
-            segmentPointer++;
-
-            if (val < 255) lacingPacket = lacingFill;
-        }
-        // Set the granulePos on the last pcm val of the last full packet
-        if (saved != -1) granuleValues[saved] = _granulePos;
-
-        if (_eos != 0) {
-            eos = 1;
-            if (lacingFill > 0) lacingValues[lacingFill - 1] |= 0x0000_0200;
-        }
-
-        pageNo = _pageNo + 1;
-        return 0;
-    }
-
-    /**
-     * Form packets into pages.
-     *
-     * In a typical encoding situation, this would be called after using
-     * packetIn() to submit data packets to the bitstream. Internally,
-     * this method assembles the accumulated packet bodies into an Ogg page
-     * suitable for writing to a stream. The method is typically called
-     * in a loop until there are no more pages ready for output
-     *
-     * This method will only return a page when a "reasonable" amount of
-     * packet data is available. Normally this is appropriate since it
-     * limits the overhead of the Ogg page headers in the bitstream,
-     * and so calling pageOut() after packetIn() should be the common case.
-     * Call flush() if immediate page generation is desired. This may be
-     * occasionally necessary, for example, to limit the temporal latency
-     * of a variable bitrate stream.
-     *
-     * @param page Destination page
-     * @return 0 success
-     *        -1 error (actually in java we never return -1)
-     */
-    public int pageOut(Page page) {
-        if ((eos != 0 && lacingFill != 0)    // Done, now flush
-         || (bodyFill - bodyReturned > 4096) // Page nominal size
-         || (lacingFill >= 255)              // Segment table full
-         || (bos == 0 && lacingFill != 0)    // Initial header page
-        ) {
-            return flush(page);
-        }
-        return 0;
-    }
-
-    public int pageOutFill(Page page, int fill) {
-        // todo
-        return 0;
-
-    }
-
-    /**
      * Conditionally flush a page
      * @param page Destination
      * @param force 0 will only flush nominal-size;
      *              1 forces us to flush a page regardless of page size
      *              so long as there's any data available at all
      * @param nFill Packet data watermark in bytes
-     * @return 0 done; -1 error
+     * @return   0 all packet data has already been flushed into pages, and there are no packets to put into the page
+     *             A Stream has been cleared explicitly or implicitly due to an internal error;
+     *        else remaining packets have successfully been flushed into the page
      */
-    public int flush_i(Page page, int force, int nFill) {
+    private int flushInternal(Page page, int force, int nFill) {
         int i;
         final int maxValues = Math.min(255, this.lacingFill);
 
@@ -566,7 +377,7 @@ public class Stream {
         long acc = 0;
         long granulePos = -1;
 
-        // if (check() != 0) return -1;
+        // if (check() != 0) return 0;
         if (maxValues == 0) return 0;
 
         // Construct a page
@@ -672,7 +483,6 @@ public class Stream {
         page.bodyBytes = bytes;
 
         // Advance the lacing data and set the bodyReturned pointer
-
         this.lacingFill -= values;
         System.arraycopy(this.lacingValues, values, this.lacingValues, 0, this.lacingFill * 4); // sizeof(int)
         System.arraycopy(this.granuleValues, values, this.granuleValues, 0, this.lacingFill * 8); // sizeof(long)
@@ -686,34 +496,376 @@ public class Stream {
     }
 
     /**
-     * This will flush remaining packets into a page (returning nonzero),
-     * even if there is not enough data to trigger a flush normally
-     * (undersized page). If there are no packets or partial packets to
-     * flush, flush() returns 0.  Note that flush() will try to flush a
-     * normal-sized page like pageOut(); a call to flush() does not guarantee
-     * that all packets have flushed. Only a return value of 0 from flush()
-     * indicates all packet data is flushed into pages
-     *
-     * Page will flush the last page in a stream even if it's undersized;
-     * you almost certainly want to use pageOut() (and *not* flush())
-     * unless you need to flush an undersized page in the middle of
-     * a stream for some reason
-     *
-     * @return 0 all packet data has already been flushed into pages, and there are no packets to put into the page
-     *           A Stream has been cleared explicitly or implicitly due to an internal error
-     *      else remaining packets have successfully been flushed into the page
+     * ?
      */
-    public int flush(Page page) {
-        return flush_i(page, 1, 4096);
+    private int packetOutInternal(Packet packet, int advance) {
+        // The last part of decode. We have the stream broken into packet segments.
+        // Now we need to group them into packets (or return the out of sync markers)
+
+        int pointer = this.lacingReturned;
+        if (this.lacingPacket <= pointer) return 0;
+
+        if ((this.lacingValues[pointer] & 0x0400) != 0) {
+            // We lost sync here, let the app know
+            this.lacingReturned++;
+
+            // We need to tell the codec there's a gap.
+            // It might need to handle previous packet dependencies
+            this.packetNo++;
+
+            return -1;
+        }
+
+        // Just using peek as an inexpensive way to ask
+        // if there's a whole packet waiting.
+        if (packet != null && advance == 0) return 1;
+
+        // Gather the whole packet.
+        // We'll have no holes or a partial packet.
+        int size = this.lacingValues[pointer] & 0xff;
+        int bytes = size;
+        int bos = this.lacingValues[pointer] & 0x0100;
+        int eos = this.lacingValues[pointer] & 0x0200;
+
+        while (size == 255) {
+            int val = this.lacingValues[++pointer];
+            size = val & 0xff;
+            if ((val & 0x0200) != 0) eos = 0x0200;
+            bytes += size;
+        }
+
+        if (packet != null) {
+            packet.bos = bos;
+            packet.eos = eos;
+            packet.data = this.bodyData;
+            packet.pointer = this.bodyReturned;
+            packet.bytes = bytes;
+            packet.packetNo = this.packetNo;
+            packet.granulePos = this.granuleValues[pointer];
+        }
+
+        if (advance != 0) {
+            this.bodyReturned += bytes;
+            this.lacingReturned = pointer + 1;
+            this.packetNo++;
+        }
+
+        return 1;
+    }
+
+    // ----- Encode & Decode ----- //
+
+    /**
+     * Submit a packet to the bitstream for page encapsulation.
+     * After this is called, more packets can be submitted, or pages can be written out.
+     *
+     * In a typical encoding situation, this method should be used after filling a packet with data.
+     * The data in the packet is copied into the internal storage managed by Stream,
+     * so the caller is free to alter the contents of packet after this call has returned.
+     *
+     * @param packet Packet will be copied to Stream
+     * @return 0 success; -1 error
+     */
+    public int packetIn(Packet packet) {
+        return bytesIn(new byte[][] { packet.data }, packet.eos, packet.granulePos);
     }
 
     /**
-     * @param page Destination page
-     * @param fill Packet data watermark in bytes
-     * @return 0 done; else error
+     * Assemble a data packet for output to the codec decoding engine.
+     * The data has already been submitted to the `Stream` and broken into segments.
+     * Each successive call returns the next complete packet built from those segments.
+     *
+     * In a typical decoding situation, this method should be used after calling
+     * `pageIn()` to submit a page of data to the bitstream.
+     * If the function returns 0, more data is needed and another page should be submitted.
+     * A non-zero return value indicates successful return of a packet.
+     *
+     * The op is filled in with pointers to memory managed by the stream state
+     * and is only valid until the next call.
+     * The client must copy the packet data if a longer lifetime is required.
+     *
+     * @param packet Destination packet
+     * @return 0 Insufficient data available to complete a packet,
+     *           or on unrecoverable internal error occurred.
+     *           `packet` has not been updated.
+     *        -1 if we are out of sync and there is a gap in the data.
+     *           This is usually a recoverable error and subsequent calls
+     *           to `packetOut()` are likely to succeed.
+     *           `packet` has not been updated.
+     *         1 A packet was assembled normally.
+     *           `packet` contains the next packet from the stream.
      */
-    public int flushFill(Page page, int fill) {
-        return flush_i(page, 1, fill);
+    public int packetOut(Packet packet) {
+        // if (check() != 0) return 0;
+        return packetOutInternal(packet, 1);
+    }
+
+    /**
+     * Attempt to assemble a raw data packet and returns it without advancing decoding.
+     *
+     * In a typical situation, this method would be called speculatively after `pageIn()`
+     * to check the packet contents before handing it off to a codec for decompression.
+     * To advance page decoding and remove the packet from the sync structure, call `packetOut()`.
+     *
+     * @param packet Pointer to the next packet available in the bitstream, if any.
+     *               A NULL value may be passed in the case of a simple "is there a packet?" check.
+     * @return -1 No packet available due to lost sync or a hole in the data.
+     *          0 Insufficient data available to complete a packet, or unrecoverable internal error occurred.
+     *          1 A packet is available.
+     */
+    public int packetPeek(Packet packet) {
+        // if (check() != 0) return 0;
+        return packetOutInternal(packet, 0);
+    }
+
+    /**
+     * Add a complete page to the bitstream
+     *
+     * In a typical decoding situation, this method would be called after using pageOut() to create a valid Page
+     *
+     * Internally, this method breaks the page into packet segments in preparation for
+     * outputting a valid packet to the codec decoding layer
+     * @param page Page to be submitted to bitstream
+     * @return 0 success; -1 error, means that the serial number of the page did not
+     *         match the serial number of the bitstream, the page version was incorrect,
+     *         or an internal error occurred.
+     */
+    public int pageIn(Page page) {
+        final byte[] headerBase = page.headerBase;
+        int headerPointer = page.headerPointer;
+
+        final byte[] bodyBase = page.bodyBase;
+        int bodyPointer = page.bodyPointer;
+        int bodyBytes = page.bodyBytes;
+
+        final int version = page.version();
+        final int continued = page.continued();
+        final int bos = page.bos();
+        final int eos = page.eos();
+        final int serialNo = page.serialNo();
+        final int pageNo = page.pageNo();
+        final long granulePos = page.granulePos();
+
+        final int segments = headerBase[headerPointer + 26] & 0xff;
+        int segmentPointer = 0;
+
+        int newBos = bos;
+
+        // if (check() != 0) return -1;
+
+        // Cleanup 'returned data'
+        if (this.bodyReturned != 0) { // body data
+            this.bodyFill -= this.bodyReturned;
+            if (this.bodyFill != 0) {
+                System.arraycopy(
+                        this.bodyData, this.bodyReturned,
+                        this.bodyData, 0,
+                        this.bodyFill
+                );
+            }
+            this.bodyReturned = 0;
+        }
+        if (this.lacingReturned != 0) { // segment table
+            if (this.lacingFill - this.lacingReturned != 0) {
+                System.arraycopy(
+                        this.lacingValues, this.lacingReturned,
+                        this.lacingValues , 0,
+                        this.lacingFill - this.lacingReturned
+                );
+                System.arraycopy(
+                        this.granuleValues, this.lacingReturned,
+                        this.granuleValues, 0,
+                        this.lacingFill - this.lacingReturned
+                );
+            }
+            this.lacingFill -= this.lacingReturned;
+            this.lacingPacket -= this.lacingReturned;
+            this.lacingReturned = 0;
+        }
+
+        // check the serial number
+        if (serialNo != this.serialNo) return -1;
+        if (version > 0) return -1;
+
+        if (lacingExpand(segments + 1) != 0) return -1;
+
+        // Are we in sequence?
+        if (pageNo != this.pageNo) {
+            // Unroll previous partial packet (if any)
+            for (int i = this.lacingPacket; i < this.lacingFill; i++) {
+                this.bodyFill -= this.lacingValues[i] & 0xff;
+            }
+            this.lacingFill = this.lacingPacket;
+
+            // Make a note of dropped data in segment table
+            if (this.pageNo != -1) {
+                this.lacingValues[this.lacingFill++] = 0x0400;
+                this.lacingPacket++;
+            }
+
+            // Are we a 'continued packet' page?
+            // If so, we'll need to skip some segments
+            if (continued != 0) {
+                if (this.lacingFill < 1
+                || (this.lacingValues[this.lacingFill - 1] & 0xff) < 255
+                || (this.lacingValues[this.lacingFill - 1]) == 0x0400
+                ) {
+                    newBos = 0;
+                }
+
+                for (; segmentPointer < segments; segmentPointer++) {
+                    int val = headerBase[headerPointer + 27 + segmentPointer] & 0xff;
+                    bodyPointer += val;
+                    bodyBytes -= val;
+                    if (val < 255) {
+                        segmentPointer++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (bodyBytes != 0) {
+            if (bodyExpand(bodyBytes) != 0) return -1;
+            System.arraycopy(bodyBase, bodyPointer, this.bodyData, this.bodyFill, bodyBytes);
+            this.bodyFill += bodyBytes;
+        }
+
+        int saved = -1;
+        while (segmentPointer < segments) {
+            int val = headerBase[headerPointer + 27 + segmentPointer] & 0xff;
+            this.lacingValues[this.lacingFill] = val;
+            this.granuleValues[this.lacingFill] = -1;
+
+            if (newBos != 0) {
+                this.lacingValues[this.lacingFill] |= 0x0100;
+                newBos = 0;
+            }
+
+            if (val < 255) saved = this.lacingFill;
+
+            this.lacingFill++;
+            segmentPointer++;
+
+            if (val < 255) this.lacingPacket = this.lacingFill;
+        }
+        // Set the granulePos on the last pcm val of the last full packet
+        if (saved != -1) this.granuleValues[saved] = granulePos;
+
+        if (eos != 0) {
+            this.eos = 1;
+            if (this.lacingFill > 0) this.lacingValues[this.lacingFill - 1] |= 0x0200;
+        }
+
+        this.pageNo = pageNo + 1;
+
+        return 0;
+    }
+
+    /**
+     * Form packets into pages.
+     *
+     * In a typical encoding situation, this would be called after using
+     * `packetIn()` to submit data packets to the bitstream.
+     * Internally, this method assembles the accumulated packet bodies
+     * into an Ogg page suitable for writing to a stream.
+     * The method is typically called in a loop until there are no more
+     * pages ready for output.
+     *
+     * This method will only return a page when a "reasonable" amount of
+     * packet data is available. Normally this is appropriate since it
+     * limits the overhead of the Ogg page headers in the bitstream,
+     * and so calling `pageOut()` after `packetIn()` should be the common case.
+     * Call `flush()` if immediate page generation is desired.
+     * This may be occasionally necessary, for example, to limit the
+     * temporal latency of a variable bitrate stream.
+     *
+     * @param page Destination page
+     * @return   0 Zero means that insufficient data has accumulated to fill a page,
+     *             or an internal error occurred. In this case og is not modified.
+     *        else a page has been completed and returned.
+     */
+    public int pageOut(Page page) {
+        // if (check() != 0) return 0;
+        int force = 0;
+        //  'were done, now flush' case                 'initial header page' case
+        if ((this.eos != 0 && this.lacingFill != 0) || (this.bos == 0 && this.lacingFill != 0)) force = 1;
+        return flushInternal(page, force, 4096);
+    }
+
+    /**
+     * Form packets into pages, similar to `pageOut()`,
+     * but allows applications to explicitly request a specific page spill size.
+     *
+     * In a typical encoding situation, this would be called after using `packetIn()`
+     * to submit data packets to the bitstream. Internally, this function assembles
+     * the accumulated packet bodies into an Ogg page suitable for writing to a stream.
+     * The method is typically called in a loop until there are no more pages ready for output.
+     *
+     * This function will return a page when at least four packets have been accumulated
+     * and accumulated packet data meets or exceeds the specified number of bytes,
+     * and/or when the accumulated packet data meets/exceeds the maximum page size
+     * regardless of accumulated packet count.
+     * Call `flush()` or `flushFill()` if immediate page generation is desired regardless
+     * of accumulated data.
+     *
+     * @param page Destination page
+     * @param nFill Packet data watermark in bytes
+     * @return   0 Zero means that insufficient data has accumulated to fill a page,
+     *             or an internal error occurred. In this case og is not modified.
+     *        else a page has been completed and returned.
+     */
+    public int pageOutFill(Page page, int nFill) {
+        // if (check() != 0) return 0;
+        int force = 0;
+        //  'were done, now flush' case                 'initial header page' case
+        if ((this.eos != 0 && this.lacingFill != 0) || (this.bos == 0 && this.lacingFill != 0)) force = 1;
+        return flushInternal(page, force, nFill);
+    }
+
+    /**
+     * Check for remaining packets inside the stream and force remaining packets into a page,
+     * regardless of the size of the page.
+     *
+     * This method should only be used when you want to flush an undersized page from
+     * the middle of the stream. Otherwise, `pageOut()` or `pageOutFill()` should always be used.
+     *
+     * This method can also be used to verify that all packets have been flushed.
+     * If the return value is 0, all packets have been placed into a page.
+     * Like `pageOut()`, it should generally be called in a loop until available
+     * packet data has been flushes, since even a single packet may span multiple pages.
+     *
+     * @param page The remaining packets in the stream will be placed into this page, if any remain.
+     * @return   0 all packet data has already been flushed into pages, and there are no packets to put into the page
+     *             A Stream has been cleared explicitly or implicitly due to an internal error;
+     *        else remaining packets have successfully been flushed into the page
+     */
+    public int flush(Page page) {
+        return flushInternal(page, 1, 4096);
+    }
+
+    /**
+     * Flush available packets into pages, similar to `flush()`,
+     * but allow applications to explicitly request a specific page spill size.
+     *
+     * This method checks for remaining packets inside the stream and forces
+     * remaining packets into pages of approximately the requested size.
+     * This should be used when you want to flush all remaining data from a stream
+     * `flush()` may be used instead if a particular page size isn't important.
+     *
+     * This method can be used to verify that all packets have been flushed.
+     * If the return value is 0, all packets have been placed into a page.
+     * Generally speaking, it should be called in a loop until all packets are flushed,
+     * since even a single packet may span multiple pages.
+     *
+     * @param page The remaining packets in the stream will be placed into this page, if any remain.
+     * @param nFill Packet data watermark in bytes
+     * @return   0 all packet data has already been flushed into pages, and there are no packets to put into the page
+     *             A Stream has been cleared explicitly or implicitly due to an internal error;
+     *        else remaining packets have successfully been flushed into the page
+     */
+    public int flushFill(Page page, int nFill) {
+        return flushInternal(page, 1, nFill);
     }
 
 }

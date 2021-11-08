@@ -20,7 +20,7 @@ public class Page {
                 /*
                    The same as the ethernet generator polynomial,
                    although we use an unreflected alg and an
-                   init/final of 0, not 0xffffffff
+                   init/final of 0, not 0xffffffff.
                	 */
             } else {
                 r <<= 1;
@@ -47,7 +47,7 @@ public class Page {
 
     /**
      * The version number
-     * In the current version of Ogg, the version number is always 0
+     * In the current version of Ogg, the version number is always 0.
      * @return 0; other numbers indicate an error in page encoding
      */
     public int version() {
@@ -56,7 +56,7 @@ public class Page {
 
     /**
      * Indicate whether this page contains packet data
-     * which has been continued from the previous page
+     * which has been continued from the previous page.
      * @return 0x1 for true, 0x0 for false
      */
     public int continued() {
@@ -80,9 +80,9 @@ public class Page {
     }
 
     /**
-     * Return the exact granular position of the packet data contained at the end of this page
-     * This is useful for tracking location when seeking or decoding
-     * For example, in audio codecs this position is the pcm sample number and in video this is the frame number
+     * Return the exact granular position of the packet data contained at the end of this page.
+     * This is useful for tracking location when seeking or decoding.
+     * For example, in audio codecs this position is the pcm sample number and in video this is the frame number.
      * @return The specific last granular position of the decoded data contained in the page
      */
     public long granulePos() {
@@ -99,8 +99,8 @@ public class Page {
     }
 
     /**
-     * Return the unique serial number for the logical bitstream of this page
-     * Each page contains the serial number for the logical bitstream that it belongs to
+     * Return the unique serial number for the logical bitstream of this page.
+     * Each page contains the serial number for the logical bitstream that it belongs to.
      * @return The serial number for this page.
      */
     public int serialNo() {
@@ -112,7 +112,7 @@ public class Page {
 
     /**
      * Return the sequential page number
-     * This is useful for ordering pages or determining when pages have been lost
+     * This is useful for ordering pages or determining when pages have been lost.
      * @return The page number for this page
      */
     public int pageNo() {
@@ -135,9 +135,9 @@ public class Page {
          ogg_page_continued(page) !=0
     */
     /**
-     * Return the number of packets that are completed on this page
+     * Return the number of packets that are completed on this page.
      * If the leading packet is begun on a previous page, but ends on
-     * this page, it's counted
+     * this page, it's counted.
      */
     public int packets() {
         int count = 0, n = headerBase[headerPointer + 26];
