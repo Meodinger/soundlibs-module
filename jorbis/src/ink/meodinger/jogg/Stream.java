@@ -470,7 +470,9 @@ public class Stream {
         // segment table
         this.headerData[26] = (byte) (values & 0xff);
         for (i = 0; i < values; i++) {
-            bytes += this.headerData[27 + i] = (byte) (this.lacingValues[i] & 0xff);
+            int value = this.lacingValues[i] & 0xff;
+            this.headerData[27 + i] = (byte) value;
+            bytes += value;
         }
 
         // set pointers in the Page

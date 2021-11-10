@@ -445,13 +445,13 @@ public class FramingTest {
         // Test data
         final int bodyBytes = page.bodyBytes;
         for (int i = 0; i < bodyBytes; i++) {
-            assertEquals("Body data mismatch (2) at pos " + i, bodyBase[bodyPointer + i], page.bodyBase[page.bodyPointer + i] & 0xff);
+            assertEquals("Body data mismatch (2) at pos " + i, bodyBase[bodyPointer + i] & 0xff, page.bodyBase[page.bodyPointer + i] & 0xff);
         }
 
         // Test header
         final int headerBytes = page.headerBytes;
         for (int i = 0; i < headerBytes; i++) {
-            assertEquals("Header content mismatch at pos " + i, headerBase[headerPointer + i], page.headerBase[page.headerPointer + i] & 0xff);
+            assertEquals("Header content mismatch at pos " + i, headerBase[headerPointer + i] & 0xff, page.headerBase[page.headerPointer + i] & 0xff);
         }
         assertEquals("Header length incorrect", headerBase[headerPointer + 26] + 27, page.headerBytes);
     }
@@ -607,7 +607,7 @@ public class FramingTest {
                         // Verify the packet
                         // Check data
                         for (int k = 0; k < packetDecode1.bytes; k++) {
-                            assertEquals("packet data mismatch in decode! pos=" + decodePacket, data[decodePacket + i], packetDecode1.data[i]);
+                            assertEquals("packet data mismatch in decode! pos=" + decodePacket, data[decodePacket + k], packetDecode1.data[packetDecode1.pointer + k]);
                         }
                         // Check bos flag
                         if (bosFlag == 0) {
