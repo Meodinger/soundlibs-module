@@ -296,16 +296,16 @@ public class Stream {
      * @param inputs Array of data will be copied to Stream
      * @return 0 success; -1 error
      */
-    private int bytesIn(byte[][] inputs, int eos, long granulePos) {
+    private int bytesIn(byte[][] inputs, int[] inputPointers, int[] inputBytes, int eos, long granulePos) {
         // if (check() != 0) return -1;
         if (inputs == null || inputs.length == 0) return 0;
+        final int inputCount = inputs.length;
 
         int bytes = 0;
-        for (byte[] input : inputs) {
-            int length = input.length;
+        for (int i = 0; i < inputCount; i++) {
             // if (_len > Integer.MAX_VALUE) return -1;
-            if (bytes > Integer.MAX_VALUE - length) return -1;
-            bytes += length;
+            if (bytes > Integer.MAX_VALUE - inputBytes[i]) return -1;
+            bytes += inputBytes[i];
         }
         final int lacingValues = bytes / 255 + 1;
 
@@ -330,10 +330,9 @@ public class Stream {
         // Copy in the submitted packet
         // Yes, the copy is a waste; this is the liability of overly clean abstraction for the time being.
         // It will actually be fairly easy to eliminate the extra copy in the future
-        for (byte[] input : inputs) {
-            int length = input.length;
-            System.arraycopy(input, 0, this.bodyData, this.bodyFill, length);
-            this.bodyFill += length;
+        for (int i = 0; i < inputCount; i++) {
+            System.arraycopy(inputs[i], inputPointers[i], this.bodyData, this.bodyFill, inputBytes[i]);
+            this.bodyFill += inputBytes[i];
         }
 
         // Store lacing values for this packet
@@ -484,9 +483,9 @@ public class Stream {
 
         // Advance the lacing data and set the bodyReturned pointer
         this.lacingFill -= values;
-        System.arraycopy(this.lacingValues, values, this.lacingValues, 0, this.lacingFill * 4); // sizeof(int)
-        System.arraycopy(this.granuleValues, values, this.granuleValues, 0, this.lacingFill * 8); // sizeof(long)
-        bodyReturned += bytes;
+        System.arraycopy(this.lacingValues, values, this.lacingValues, 0, this.lacingFill);
+        System.arraycopy(this.granuleValues, values, this.granuleValues, 0, this.lacingFill);
+        this.bodyReturned += bytes;
 
         // calculate the checksum
         page.checksum();
@@ -518,7 +517,7 @@ public class Stream {
 
         // Just using peek as an inexpensive way to ask
         // if there's a whole packet waiting.
-        if (packet != null && advance == 0) return 1;
+        if (packet == null && advance == 0) return 1;
 
         // Gather the whole packet.
         // We'll have no holes or a partial packet.
@@ -567,7 +566,7 @@ public class Stream {
      * @return 0 success; -1 error
      */
     public int packetIn(Packet packet) {
-        return bytesIn(new byte[][] { packet.data }, packet.eos, packet.granulePos);
+        return bytesIn(new byte[][] { packet.data }, new int[] { packet.pointer }, new int[] { packet.bytes }, packet.eos, packet.granulePos);
     }
 
     /**

@@ -217,7 +217,6 @@ public class Sync {
      *          0 Page not ready; more data (no bytes skipped)
      *          n Page synced at current location; page length n bytes
      */
-    @SuppressWarnings("ConstantConditions")
     public int pageSeek(Page p) {
         // if (check() != 0) return -1;
 
@@ -238,6 +237,7 @@ public class Sync {
                 // Same code occurred around line No.233
                 // For simpleness, we don't make these lines another method
                 // For constancy, we need assign headerBytes with 0
+                // noinspection ConstantConditions
                 this.headerBytes = 0;
                 this.bodyBytes = 0;
 

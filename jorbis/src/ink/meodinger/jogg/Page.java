@@ -1,5 +1,7 @@
 package ink.meodinger.jogg;
 
+import static ink.meodinger.jogg._CRC_.updateCRC;
+
 /**
  * Author: Meodinger
  * Date: 2021/10/27
@@ -134,6 +136,7 @@ public class Page {
          ogg_page_packets(page)   ==0,
          ogg_page_continued(page) !=0
     */
+
     /**
      * Return the number of packets that are completed on this page.
      * If the leading packet is begun on a previous page, but ends on
@@ -161,17 +164,24 @@ public class Page {
         headerBase[headerPointer + 24] = 0;
         headerBase[headerPointer + 25] = 0;
 
+        /*
+
         // CRC code copied from `com.jcraft.jogg.Page`
         // Code in libogg is so hard to read
         for (int i = 0; i < headerBytes; i++) {
-            crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
+            crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
         }
         for (int i = 0; i < bodyBytes; i++) {
-            crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
+            crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
         }
 
-        headerBase[headerPointer + 22] = (byte)  (crc_reg         & 0xff) ;
-        headerBase[headerPointer + 23] = (byte) ((crc_reg >>> 8)  & 0xff);
+         */
+
+        crc_reg = updateCRC(crc_reg, headerBase, headerPointer, headerBytes);
+        crc_reg = updateCRC(crc_reg, bodyBase, bodyPointer, bodyBytes);
+
+        headerBase[headerPointer + 22] = (byte) ((crc_reg       ) & 0xff);
+        headerBase[headerPointer + 23] = (byte) ((crc_reg >>>  8) & 0xff);
         headerBase[headerPointer + 24] = (byte) ((crc_reg >>> 16) & 0xff);
         headerBase[headerPointer + 25] = (byte) ((crc_reg >>> 24) & 0xff);
     }
