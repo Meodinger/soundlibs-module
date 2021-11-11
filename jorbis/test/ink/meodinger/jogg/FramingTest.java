@@ -1,8 +1,10 @@
 package ink.meodinger.jogg;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+
 
 /**
  * Author: Meodinger
@@ -167,7 +169,7 @@ public class FramingTest {
     };
 
     // page with the 255 segment limit
-    private static final int[] head1_5 = {
+    private static final int[] header1_5 = {
             0x4f, 0x67, 0x67, 0x53, 0x00, 0x02,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00,
@@ -175,7 +177,7 @@ public class FramingTest {
             1,
             0
     };
-    private static final int[] head2_5 = {
+    private static final int[] header2_5 = {
             0x4f, 0x67, 0x67, 0x53, 0x00, 0x00,
             0x07, 0xfc, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 0x01, 0x00, 0x00, 0x00,
@@ -214,7 +216,7 @@ public class FramingTest {
             10, 10, 10, 10, 10, 10, 10, 10,
             10, 10, 10, 10, 10, 10, 10
     };
-    private static final int[] head3_5 = {
+    private static final int[] header3_5 = {
             0x4f, 0x67, 0x67, 0x53, 0x00, 0x04,
             0x07, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 0x02, 0x00, 0x00, 0x00,
@@ -224,7 +226,7 @@ public class FramingTest {
     };
 
     // packet that over-spans over an entire page
-    private static final int[] head1_6 = {
+    private static final int[] header1_6 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x02,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 0, 0, 0, 0,
@@ -232,7 +234,7 @@ public class FramingTest {
             1,
             0
     };
-    private static final int[] head2_6 = {
+    private static final int[] header2_6 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x00,
             0x07, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 1, 0, 0, 0,
@@ -272,7 +274,7 @@ public class FramingTest {
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255
     };
-    private static final int[] head3_6 = {
+    private static final int[] header3_6 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x01,
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
             0x01, 0x02, 0x03, 0x04, 2, 0, 0, 0,
@@ -311,7 +313,7 @@ public class FramingTest {
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255
     };
-    private static final int[] head4_6 = {
+    private static final int[] header4_6 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x05,
             0x07, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 3, 0, 0, 0,
@@ -321,7 +323,7 @@ public class FramingTest {
     };
 
     // packet that over-spans over an entire page
-    private static final int[] head1_7 = {
+    private static final int[] header1_7 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x02,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 0, 0, 0, 0,
@@ -329,7 +331,7 @@ public class FramingTest {
             1,
             0
     };
-    private static final int[] head2_7 = {
+    private static final int[] header2_7 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x00,
             0x07, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 1, 0, 0, 0,
@@ -369,7 +371,7 @@ public class FramingTest {
             255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255
     };
-    private static final int[] head3_7 = {
+    private static final int[] header3_7 = {
             0x4f, 0x67, 0x67, 0x53, 0, 0x05,
             0x07, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x01, 0x02, 0x03, 0x04, 2, 0, 0, 0,
@@ -437,7 +439,7 @@ public class FramingTest {
         // Test data
         final int packetBytes = packet.bytes;
         for (int i = 0; i < packetBytes; i++) {
-            assertEquals("Body data mismatch (1) at pos " + i, (i + no) & 0xff, packet.data[i] & 0xff);
+            assertEquals("Body data mismatch (1) at pos " + i, (i + no) & 0xff, packet.data[packet.pointer + i] & 0xff);
         }
     }
 
@@ -488,16 +490,14 @@ public class FramingTest {
     }
 
     private static void copyPage(Page page) {
-        byte[] temp;
-
-        temp = new byte[page.headerBytes];
-        System.arraycopy(page.headerBase, page.headerBytes, temp, 0, page.headerBytes);
-        page.headerBase = temp;
+        byte[] temp1 = new byte[page.headerBytes];
+        System.arraycopy(page.headerBase, page.headerPointer, temp1, 0, page.headerBytes);
+        page.headerBase = temp1;
         page.headerPointer = 0;
 
-        temp = new byte[page.bodyBytes];
-        System.arraycopy(page.bodyBase, page.bodyBytes, temp, 0, page.bodyBytes);
-        page.bodyBase = temp;
+        byte[] temp2 = new byte[page.bodyBytes];
+        System.arraycopy(page.bodyBase, page.bodyPointer, temp2, 0, page.bodyBytes);
+        page.bodyBase = temp2;
         page.bodyPointer = 0;
     }
 
@@ -509,7 +509,7 @@ public class FramingTest {
         int decodePacket = 0;
         int granulePos = 7;
         int pageNo = 0;
-        int packets = 0;
+        int packets;
         int pageOut = pageSkip;
         int bosFlag = 0;
         int esoFlag = 0;
@@ -562,14 +562,14 @@ public class FramingTest {
                 Packet packetDecode1 = new Packet();
                 Packet packetDecode2 = new Packet();
 
-                sync.buffer(page.headerBytes + page.bodyBytes);
+                int bufferPointer = sync.buffer(page.headerBytes + page.bodyBytes);
+                int nextPointer = bufferPointer;
                 byte[] buffer = sync.data;
-                int bufferPointer = 0;
-                int nextPointer = 0;
                 byteSkipCount += page.headerBytes;
                 if (byteSkipCount > byteSkip) {
-                    System.arraycopy(page.headerBase, page.headerPointer, buffer, 0, byteSkipCount - byteSkip);
+                    System.arraycopy(page.headerBase, page.headerPointer, buffer, nextPointer, byteSkipCount - byteSkip);
                     nextPointer += byteSkipCount - byteSkip;
+                    byteSkipCount = byteSkip;
                 }
 
                 byteSkipCount += page.bodyBytes;
@@ -635,70 +635,229 @@ public class FramingTest {
         System.out.println("ok");
     }
 
-    @Test
-    public void main() {
+    @Before
+    public void initTest() {
         encode.init(0x04030201);
         decode.init(0x04030201);
         sync.init();
-
-
-        // Exercise each code path in the framing code.
-        // Also verify that the checksums are working.
-        {
-            // 17 only
-            int[] packets = {17, -1};
-            int[][] headers = {header1_0, null};
-
-            System.out.print("Testing single page encoding... ");
-            testPack(packets, headers, 0, 0, 0);
-        }
-
-        {
-            // 17, 254, 255, 256, 500, 510, 600 byte, pad
-            int[] packets = {17, 254, 255, 256, 500, 510, 600, -1};
-            int[][] headers = {header1_1, header2_1, null};
-
-            System.out.print("Testing basic page encoding... ");
-            testPack(packets, headers, 0, 0, 0);
-        }
-
-        {
-            // nil packets; beginning, middle, end
-            int[] packets = {0, 17, 254, 255, 0, 256, 0, 500, 510, 600, 0, -1};
-            int[][] headers = {header1_2, header2_2, null};
-
-            System.out.print("Testing basic nil packets... ");
-            testPack(packets, headers, 0, 0, 0);
-        }
-
-        {
-            // large initial packet
-            int[] packets = {4345, 259, 255, -1};
-            int[][] headers = {header1_3, header2_3, null};
-
-            System.out.print("Testing initial-packet lacing > 4k... ");
-            testPack(packets, headers, 0, 0, 0);
-        }
-
-        {
-            // continuing packet test; with page spill expansion, we have to overflow the lacing table.
-            int[] packets = {0, 65500, 259, 255, -1};
-            int[][] headers = {header1_4, header2_4, header3_4, null};
-
-            System.out.print("Testing single packet page span... ");
-            testPack(packets, headers, 0, 0, 0);
-        }
-
-        {
-            // spill expand packet test
-            int[] packets = {0, 4345, 259, 255, 0, 0, -1};
-            int[][] headers = {header1_4b, header2_4b, header3_4b, null};
-
-            System.out.print("Testing page spill expansion... ");
-            testPack(packets, headers, 0, 0, 0);
-        }
-
     }
 
+    // Exercise each code path in the framing code.
+    // Also verify that the checksums are working.
+
+    @Test
+    public void singlePageEncoding() {
+        // 17 only
+        int[] packets = {17, -1};
+        int[][] headers = {header1_0, null};
+
+        System.out.print("Testing single page encoding... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void basicPageEncoding() {
+        // 17, 254, 255, 256, 500, 510, 600 byte, pad
+        int[] packets = {17, 254, 255, 256, 500, 510, 600, -1};
+        int[][] headers = {header1_1, header2_1, null};
+
+        System.out.print("Testing basic page encoding... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void basicNilPackets() {
+        // nil packets; beginning, middle, end
+        int[] packets = {0, 17, 254, 255, 0, 256, 0, 500, 510, 600, 0, -1};
+        int[][] headers = {header1_2, header2_2, null};
+
+        System.out.print("Testing basic nil packets... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void largeInitialPacket() {
+        // large initial packet
+        int[] packets = {4345, 259, 255, -1};
+        int[][] headers = {header1_3, header2_3, null};
+
+        System.out.print("Testing initial-packet lacing > 4k... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void singlePacketPageSpan() {
+        // continuing packet test; with page spill expansion, we have to overflow the lacing table.
+        int[] packets = {0, 65500, 259, 255, -1};
+        int[][] headers = {header1_4, header2_4, header3_4, null};
+
+        System.out.print("Testing single packet page span... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void pageSpillExpansion() {
+        // spill expand packet test
+        int[] packets = {0, 4345, 259, 255, 0, 0, -1};
+        int[][] headers = {header1_4b, header2_4b, header3_4b, null};
+
+        System.out.print("Testing page spill expansion... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void maxPacketSegments() {
+        // page with the 255 segment limit
+        int[] packets = {0,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 10,
+                10, 10, 10, 10, 10, 10, 10, 50, -1
+        };
+        int[][] headers = {header1_5, header2_5, header3_5, null};
+
+        System.out.print("Testing max packet segments... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void veryLargePackets() {
+        // packet that over-spans over an entire page
+        int[] packets = {0, 100, 130049, 259, 255, -1};
+        int[][] headers = {header1_6, header2_6, header3_6, header4_6, null};
+
+        System.out.print("Testing very large packets... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void veryLargePacketsRsync() {
+        // test for the libogg 1.1.1 re-sync in large continuation bug
+        // found by Josh Coalson
+        int[] packets = {0, 100, 130049, 259, 255, -1};
+        int[][] headers = {header1_6, header2_6, header3_6, header4_6, null};
+
+        System.out.print("Testing continuation re-sync in very large packets... ");
+        testPack(packets, headers, 100, 2, 3);
+    }
+
+    @Test
+    public void zeroDataPage() {
+        // term only page.  why not?
+        int[] packets = {0, 100, 64770, -1};
+        int[][] headers = {header1_7, header2_7, header3_7, null};
+
+        System.out.print("Testing zero data page (1 nil packet)... ");
+        testPack(packets, headers, 0, 0, 0);
+    }
+
+    @Test
+    public void pages() {
+        byte[] data = new byte[1024 * 1024];
+        int[] pl = {0, 1,1,98,4079, 1,1,2954,2057, 76,34,912,0,234,1000,1000, 1000,300,-1};
+        int inputPointer = 0;
+        Page[] pages = new Page[5];
+        for (int i = 0; i < 5; i++) pages[i] = new Page();
+
+        encode.reset();
+
+        for (int i = 0; pl[i] != -1; i++) {
+            Packet packet = new Packet();
+            int len = pl[i];
+
+            packet.data = data;
+            packet.pointer = inputPointer;
+            packet.bytes = len;
+            packet.eos = pl[i + 1] < 0 ? 1 : 0;
+            packet.granulePos = (i + 1) * 1000;
+
+            for (int j = 0; j < len; j++) data[inputPointer++] = (byte) (i + j);
+            encode.packetIn(packet);
+        }
+
+        // retrieve finished pages
+        for (int i = 0; i < 5; i++) {
+            assertNotEquals("Too few pages output building sync tests!", 0, encode.pageOut(pages[i]));
+            copyPage(pages[i]);
+        }
+
+        // Test lost pages on pageIn/packetOut: no rollback
+        {
+            Page temp = new Page();
+            Packet test = new Packet();
+
+            System.out.print("Testing loss of pages... ");
+
+            sync.reset();
+            decode.reset();
+            int pointer;
+            for (int i = 0; i < 5; i++) {
+                pointer = sync.buffer(pages[i].headerBytes);
+                System.arraycopy(pages[i].headerBase, pages[i].headerPointer, sync.data, pointer, pages[i].headerBytes);
+                sync.wrote(pages[i].headerBytes);
+
+                pointer = sync.buffer(pages[i].bodyBytes);
+                System.arraycopy(pages[i].bodyBase, pages[i].bodyPointer, sync.data, pointer, pages[i].bodyBytes);
+                sync.wrote(pages[i].bodyBytes);
+            }
+
+            sync.pageOut(temp);
+            decode.pageIn(temp);
+            sync.pageOut(temp);
+            decode.pageIn(temp);
+            sync.pageOut(temp);
+            // skip
+            sync.pageOut(temp);
+            decode.pageIn(temp);
+
+            // do we get the expected results/packets?
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 0, 0, 0);
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 1, 1, -1);
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 1, 2, -1);
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 98, 3, -1);
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 4079, 4, 5000);
+            assertEquals("loss of page did not return error",-1, decode.packetOut(test));
+
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 76, 9, -1);
+            assertEquals(1, decode.packetOut(test));
+            checkPacket(test, 34, 10, -1);
+
+            System.out.println("ok");
+        }
+    }
 
 }

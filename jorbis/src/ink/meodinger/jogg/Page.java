@@ -1,6 +1,5 @@
 package ink.meodinger.jogg;
 
-import static ink.meodinger.jogg._CRC_.updateCRC;
 
 /**
  * Author: Meodinger
@@ -11,6 +10,11 @@ import static ink.meodinger.jogg._CRC_.updateCRC;
 public class Page {
 
     // ----- Static Fields & Methods ----- //
+
+    /**
+     * Original libogg CRC algorithm, or JOgg CRC algorithm
+     */
+    public static boolean uesOriCRCAlgo = false;
 
     private static final int[] CRC_LOOKUP = new int[256];
     private static int crcEntry(int index) {
@@ -164,21 +168,19 @@ public class Page {
         headerBase[headerPointer + 24] = 0;
         headerBase[headerPointer + 25] = 0;
 
-        /*
-
-        // CRC code copied from `com.jcraft.jogg.Page`
-        // Code in libogg is so hard to read
-        for (int i = 0; i < headerBytes; i++) {
-            crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
+        if (uesOriCRCAlgo) {
+            crc_reg = _CRC_.updateCRC(crc_reg, headerBase, headerPointer, headerBytes);
+            crc_reg = _CRC_.updateCRC(crc_reg, bodyBase, bodyPointer, bodyBytes);
+        } else {
+            // CRC code copied from `com.jcraft.jogg.Page`
+            // Code in libogg is so hard to read
+            for (int i = 0; i < headerBytes; i++) {
+                crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
+            }
+            for (int i = 0; i < bodyBytes; i++) {
+                crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
+            }
         }
-        for (int i = 0; i < bodyBytes; i++) {
-            crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
-        }
-
-         */
-
-        crc_reg = updateCRC(crc_reg, headerBase, headerPointer, headerBytes);
-        crc_reg = updateCRC(crc_reg, bodyBase, bodyPointer, bodyBytes);
 
         headerBase[headerPointer + 22] = (byte) ((crc_reg       ) & 0xff);
         headerBase[headerPointer + 23] = (byte) ((crc_reg >>>  8) & 0xff);

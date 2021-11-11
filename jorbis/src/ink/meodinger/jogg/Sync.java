@@ -151,7 +151,7 @@ public class Sync {
      * @param size Wanted buffer size.
      *             The actual size of the buffer returned will be
      *             this size plus some extra bytes (currently 4096).
-     * @return New storage the internal buffer could hold
+     * @return Next segment pointer; a segment at least as large as requested at the fill mark
      */
     public int buffer(int size) {
         // if (check() != 0) return -1;
@@ -181,7 +181,7 @@ public class Sync {
             this.storage = newsize;
         }
 
-        return fill;
+        return this.fill;
     }
 
     /**
