@@ -100,7 +100,9 @@ public class Stream {
 
     // ----- Constructors ----- //
 
-    public Stream() {}
+    public Stream() {
+        init();
+    }
 
     public Stream(int serialNo) {
         init(serialNo);
@@ -108,12 +110,7 @@ public class Stream {
 
     // ----- Stream API ----- //
 
-    /**
-     * Initialize a `Stream` and allocate appropriate memory in preparation for encoding or decoding.
-     * Also assigns the stream a given serial number.
-     * @param serialNo Stream serial number
-     */
-    public void init(int serialNo) {
+    public void init() {
         this.bodyData = new byte[INIT_DATA_STORAGE];
         this.bodyStorage = INIT_DATA_STORAGE;
         this.bodyFill = 0;
@@ -131,7 +128,6 @@ public class Stream {
 
         this.bos = 0;
         this.eos = 0;
-        this.serialNo = serialNo;
         this.pageNo = 0;
         this.packetNo = 0;
         this.granulePos = 0;
@@ -140,6 +136,16 @@ public class Stream {
         Arrays.fill(this.granuleValues, 0);
         Arrays.fill(this.lacingValues, 0);
         Arrays.fill(this.headerData, (byte) 0);
+    }
+
+    /**
+     * Initialize a `Stream` and allocate appropriate memory in preparation for encoding or decoding.
+     * Also assigns the stream a given serial number.
+     * @param serialNo Stream serial number
+     */
+    public void init(int serialNo) {
+        init();
+        this.serialNo = serialNo;
     }
 
     /**
@@ -252,13 +258,13 @@ public class Stream {
                 return -1;
             }
 
-            int newBodyStorage = this.bodyStorage + needed;
-            if (newBodyStorage < Integer.MAX_VALUE - 1024) newBodyStorage += 1024;
+            int newStorage = this.bodyStorage + needed;
+            if (newStorage < Integer.MAX_VALUE - 1024) newStorage += 1024;
 
-            byte[] newData = new byte[newBodyStorage];
+            byte[] newData = new byte[newStorage];
             System.arraycopy(this.bodyData, 0, newData, 0, this.bodyData.length);
             this.bodyData = newData;
-            this.bodyStorage = newBodyStorage;
+            this.bodyStorage = newStorage;
         }
         return 0;
     }
@@ -298,6 +304,7 @@ public class Stream {
      */
     private int bytesIn(byte[][] inputs, int[] inputPointers, int[] inputBytes, int eos, long granulePos) {
         // if (check() != 0) return -1;
+
         if (inputs == null || inputs.length == 0) return 0;
         final int inputCount = inputs.length;
 
@@ -333,6 +340,7 @@ public class Stream {
         for (int i = 0; i < inputCount; i++) {
             System.arraycopy(inputs[i], inputPointers[i], this.bodyData, this.bodyFill, inputBytes[i]);
             this.bodyFill += inputBytes[i];
+            int c = 0;
         }
 
         // Store lacing values for this packet
@@ -368,16 +376,15 @@ public class Stream {
      *        else remaining packets have successfully been flushed into the page
      */
     private int flushInternal(Page page, int force, int nFill) {
-        int i;
+        // if (check() != 0) return 0;
+
         final int maxValues = Math.min(255, this.lacingFill);
+        if (maxValues == 0) return 0;
 
         int values;
         int bytes = 0;
         long acc = 0;
         long granulePos = -1;
-
-        // if (check() != 0) return 0;
-        if (maxValues == 0) return 0;
 
         // Construct a page
         // Decide how many segments to include
@@ -436,27 +443,26 @@ public class Stream {
         this.bos = 1;
 
         // 64 bits of PCM position
-        for (i = 6; i < 14; i++) {
+        for (int i = 6; i < 14; i++) {
             this.headerData[i] = (byte) (granulePos & 0xff);
             granulePos >>= 8;
         }
 
         // 32 bits of stream serial number
         int serialNo = this.serialNo;
-        for (i = 14; i < 18; i++) {
+        for (int i = 14; i < 18; i++) {
             this.headerData[i] = (byte) (serialNo & 0xff);
             serialNo >>= 8;
         }
 
         // 32 bits of page counter
         // (we have both counter and page header because this val can roll over)
-        if (this.pageNo == -1) this.pageNo = 0; /* because someone called
-                                                   reset(); this would be a
-                                                   strange thing to do in an
-                                                   encoding stream, but it has
-                                                   plausible uses */
+        /// because someone called reset();
+        // this would be a strange thing to do in an encoding stream,
+        // but it has plausible uses
+        if (this.pageNo == -1) this.pageNo = 0;
         int pageNo = this.pageNo++;
-        for (i = 18; i < 22; i++) {
+        for (int i = 18; i < 22; i++) {
             this.headerData[i] = (byte) (pageNo & 0xff);
             pageNo >>= 8;
         }
@@ -469,10 +475,10 @@ public class Stream {
 
         // segment table
         this.headerData[26] = (byte) (values & 0xff);
-        for (i = 0; i < values; i++) {
-            int value = this.lacingValues[i] & 0xff;
-            this.headerData[27 + i] = (byte) value;
-            bytes += value;
+        for (int i = 0; i < values; i++) {
+            int size = this.lacingValues[i] & 0xff;
+            this.headerData[27 + i] = (byte) size;
+            bytes += size;
         }
 
         // set pointers in the Page
@@ -497,7 +503,7 @@ public class Stream {
     }
 
     /**
-     * ?
+     * For packetOut/Peek ues
      */
     private int packetOutInternal(Packet packet, int advance) {
         // The last part of decode. We have the stream broken into packet segments.
@@ -523,11 +529,11 @@ public class Stream {
 
         // Gather the whole packet.
         // We'll have no holes or a partial packet.
-        int size = this.lacingValues[pointer] & 0xff;
-        int bytes = size;
-        int bos = this.lacingValues[pointer] & 0x0100;
-        int eos = this.lacingValues[pointer] & 0x0200;
+        int size = this.lacingValues[pointer] & 0x00ff;
+        int bos  = this.lacingValues[pointer] & 0x0100;
+        int eos  = this.lacingValues[pointer] & 0x0200;
 
+        int bytes = size;
         while (size == 255) {
             int val = this.lacingValues[++pointer];
             size = val & 0xff;

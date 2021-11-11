@@ -220,13 +220,12 @@ public class Sync {
     public int pageSeek(Page p) {
         // if (check() != 0) return -1;
 
-        int nextPagePointer = 0;
-        final int pagePointer = this.returned;
-        final int pageBytes = this.fill - this.returned;
+        int pagePointer = this.returned;
+        int bytes = this.fill - this.returned;
 
         if (this.headerBytes == 0) {
             // not enough for a header
-            if (pageBytes < 27) return 0;
+            if (bytes < 27) return 0;
 
             // verify capture pattern
             if (this.data[pagePointer] != 'O'
@@ -241,23 +240,24 @@ public class Sync {
                 this.headerBytes = 0;
                 this.bodyBytes = 0;
 
+                int nextPointer = 0;
                 // search for possible capture
-                for (int i = 0; i < pageBytes - 1; i++) {
+                for (int i = 0; i < bytes - 1; i++) {
                     if (this.data[pagePointer + 1 + i] == 'O') {
-                        nextPagePointer = pagePointer + 1 + i;
+                        nextPointer = pagePointer + 1 + i;
                         break;
                     }
                 }
-                if (nextPagePointer == 0) nextPagePointer = this.fill;
+                if (nextPointer == 0) nextPointer = this.fill;
 
-                this.returned = nextPagePointer;
-                return (-(nextPagePointer - pagePointer));
+                this.returned = nextPointer;
+                return (-(nextPointer - pagePointer));
             }
 
             int headerBytes = (this.data[pagePointer + 26] & 0xff) + 27;
 
             // not enough for header + seg table
-            if (pageBytes < headerBytes) return 0;
+            if (bytes < headerBytes) return 0;
 
             // count up body length in the segment table
             for(int i = 0; i < (this.data[pagePointer + 26] & 0xff); i++){
@@ -266,7 +266,7 @@ public class Sync {
             this.headerBytes = headerBytes;
         }
 
-        if (this.bodyBytes + this.headerBytes > pageBytes) return 0;
+        if (this.bodyBytes + this.headerBytes > bytes) return 0;
 
         // The whole test page is buffered, verify the checksum
         synchronized (this.checksum) {
@@ -298,17 +298,18 @@ public class Sync {
                 this.headerBytes = 0;
                 this.bodyBytes = 0;
 
+                int nextPointer = 0;
                 // search for possible capture
-                for (int i = 0; i < pageBytes - 1; i++) {
+                for (int i = 0; i < bytes - 1; i++) {
                     if (this.data[pagePointer + 1 + i] == 'O') {
-                        nextPagePointer = pagePointer + 1 + i;
+                        nextPointer = pagePointer + 1 + i;
                         break;
                     }
                 }
-                if (nextPagePointer == 0) nextPagePointer = this.fill;
+                if (nextPointer == 0) nextPointer = this.fill;
 
-                this.returned = nextPagePointer;
-                return (-(nextPagePointer - pagePointer));
+                this.returned = nextPointer;
+                return (-(nextPointer - pagePointer));
             }
         }
 
@@ -317,10 +318,10 @@ public class Sync {
         // int newPage = returned -> pointer = page
         if(p != null){
             p.headerBase = this.data;
-            p.headerPointer = this.returned;
+            p.headerPointer = pagePointer;
             p.headerBytes = this.headerBytes;
             p.bodyBase = this.data;
-            p.bodyPointer = this.returned + this.headerBytes;
+            p.bodyPointer = pagePointer + this.headerBytes;
             p.bodyBytes = this.bodyBytes;
         }
 

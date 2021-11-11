@@ -16,31 +16,6 @@ public class Page {
      */
     public static boolean uesOriCRCAlgo = false;
 
-    private static final int[] CRC_LOOKUP = new int[256];
-    private static int crcEntry(int index) {
-        int r = index << 24;
-        for (int i = 0; i < 8; i++) {
-            if ((r & 0x8000_0000) != 0) {
-                // CRC-32-IEEE 802.3
-                r = (r << 1) ^ 0x04c1_1db7;
-                /*
-                   The same as the ethernet generator polynomial,
-                   although we use an unreflected alg and an
-                   init/final of 0, not 0xffffffff.
-               	 */
-            } else {
-                r <<= 1;
-            }
-        }
-        // r & 0xffff_ffff;
-        return r;
-    }
-    static {
-        for (int i = 0; i < CRC_LOOKUP.length; i++) {
-            CRC_LOOKUP[i] = crcEntry(i);
-        }
-    }
-
     // ----- Instance Fields & Methods ----- //
 
     public byte[] headerBase = null;
@@ -175,10 +150,10 @@ public class Page {
             // CRC code copied from `com.jcraft.jogg.Page`
             // Code in libogg is so hard to read
             for (int i = 0; i < headerBytes; i++) {
-                crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
+                crc_reg = (crc_reg << 8) ^ _CRC_.CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
             }
             for (int i = 0; i < bodyBytes; i++) {
-                crc_reg = (crc_reg << 8) ^ CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
+                crc_reg = (crc_reg << 8) ^ _CRC_.CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
             }
         }
 

@@ -8,6 +8,35 @@ package ink.meodinger.jogg;
 
 class _CRC_ {
 
+    // JOgg
+
+    public static final int[] CRC_LOOKUP = new int[256];
+    private static int crcEntry(int index) {
+        int r = index << 24;
+        for (int i = 0; i < 8; i++) {
+            if ((r & 0x8000_0000) != 0) {
+                // CRC-32-IEEE 802.3
+                r = (r << 1) ^ 0x04c1_1db7;
+                /*
+                   The same as the ethernet generator polynomial,
+                   although we use an unreflected alg and an
+                   init/final of 0, not 0xffffffff.
+               	 */
+            } else {
+                r <<= 1;
+            }
+        }
+        // r & 0xffff_ffff;
+        return r;
+    }
+    static {
+        for (int i = 0; i < CRC_LOOKUP.length; i++) {
+            CRC_LOOKUP[i] = crcEntry(i);
+        }
+    }
+
+    // Ori
+
     public static int updateCRC(int crc, byte[] buffer, int pointer, int size) {
         int CRCPointer = 0;
         while (size >= 8) {
@@ -16,21 +45,20 @@ class _CRC_ {
                     ((buffer[pointer + CRCPointer + 2] & 0xff) <<  8) |
                      (buffer[pointer + CRCPointer + 3] & 0xff));
 
-            crc = CRC_LOOKUP[7][(crc >>> 24) & 0xff] ^ CRC_LOOKUP[6][(crc >>> 16) & 0xff] ^
-                  CRC_LOOKUP[5][(crc >>>  8) & 0xff] ^ CRC_LOOKUP[4][ crc         & 0xff] ^
-                  CRC_LOOKUP[3][buffer[pointer + CRCPointer + 4] & 0xff] ^ CRC_LOOKUP[2][buffer[pointer + CRCPointer + 5] & 0xff] ^
-                  CRC_LOOKUP[1][buffer[pointer + CRCPointer + 6] & 0xff] ^ CRC_LOOKUP[0][buffer[pointer + CRCPointer + 7] & 0xff];
+            crc = ORI_CRC_LOOKUP[7][(crc >>> 24) & 0xff] ^ ORI_CRC_LOOKUP[6][(crc >>> 16) & 0xff] ^
+                  ORI_CRC_LOOKUP[5][(crc >>>  8) & 0xff] ^ ORI_CRC_LOOKUP[4][ crc         & 0xff] ^
+                  ORI_CRC_LOOKUP[3][buffer[pointer + CRCPointer + 4] & 0xff] ^ ORI_CRC_LOOKUP[2][buffer[pointer + CRCPointer + 5] & 0xff] ^
+                  ORI_CRC_LOOKUP[1][buffer[pointer + CRCPointer + 6] & 0xff] ^ ORI_CRC_LOOKUP[0][buffer[pointer + CRCPointer + 7] & 0xff];
 
             CRCPointer += 8;
             size -= 8;
         }
 
-        while (size-- != 0) crc = (crc << 8) ^ CRC_LOOKUP[0][((crc >>> 24) & 0xff) ^ (buffer[pointer + CRCPointer++] & 0xff)];
+        while (size-- != 0) crc = (crc << 8) ^ ORI_CRC_LOOKUP[0][((crc >>> 24) & 0xff) ^ (buffer[pointer + CRCPointer++] & 0xff)];
 
         return crc;
     }
-
-    public static final int[][] CRC_LOOKUP = {
+    private static final int[][] ORI_CRC_LOOKUP = {
             {
                     0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9, 0x130476dc, 0x17c56b6b, 0x1a864db2, 0x1e475005,
                     0x2608edb8, 0x22c9f00f, 0x2f8ad6d6, 0x2b4bcb61, 0x350c9b64, 0x31cd86d3, 0x3c8ea00a, 0x384fbdbd,
