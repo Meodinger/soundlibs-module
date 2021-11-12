@@ -56,13 +56,13 @@ public class Packet {
      * Clear data in Packet
      */
     public void clear() {
-        data = null;
-        pointer = 0;
-        bytes = 0;
+        this.data = null;
+        this.pointer = 0;
+        this.bytes = 0;
 
-        bos = 0;
-        eos = 0;
-        granulePos = 0;
-        packetNo = 0;
+        this.bos = 0;
+        this.eos = 0;
+        this.granulePos = 0;
+        this.packetNo = 0;
     }
 }

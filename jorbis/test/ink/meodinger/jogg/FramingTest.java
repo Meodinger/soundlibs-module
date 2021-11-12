@@ -467,7 +467,7 @@ public class FramingTest {
         page.bodyPointer = 0;
     }
 
-    private void testPack(int[] pl, int[][] headers, int byteSkip, int pageSkip, int packetSkip) {
+    private void testPack(int[] packetLengths, int[][] headers, int byteSkip, int pageSkip, int packetSkip) {
         byte[] data = new byte[1024 * 1024];
         int inputPointer = 0;
         int outputPointer = 0;
@@ -486,18 +486,18 @@ public class FramingTest {
         decode.reset();
         sync.reset();
 
-        for (packets = 0; packets < packetSkip; packets++) decodePacket += pl[packets];
-        for (packets = 0; ; packets++) if (pl[packets] == -1) break;
+        for (packets = 0; packets < packetSkip; packets++) decodePacket += packetLengths[packets];
+        for (packets = 0; ; packets++) if (packetLengths[packets] == -1) break;
 
         for (int i = 0; i < packets; i++) {
             // Construct a test packet
             Packet packet = new Packet();
-            final int len = pl[i];
+            final int len = packetLengths[i];
 
             packet.data = data;
             packet.pointer = inputPointer;
             packet.bytes = len;
-            packet.eos = pl[i + 1] < 0 ? 1 : 0;
+            packet.eos = packetLengths[i + 1] < 0 ? 1 : 0;
             packet.granulePos = granulePos;
 
             granulePos += 1024;

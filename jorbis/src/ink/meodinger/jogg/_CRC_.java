@@ -37,9 +37,11 @@ class _CRC_ {
 
     // Ori
 
-    public static int updateCRC(int crc, byte[] buffer, int pointer, int size) {
+    public static int updateCRC(int crc, final byte[] buffer, final int pointer, final int size) {
         int CRCPointer = 0;
-        while (size >= 8) {
+        int bufferSize = size;
+
+        while (bufferSize >= 8) {
             crc ^= (((buffer[pointer + CRCPointer    ] & 0xff) << 24) |
                     ((buffer[pointer + CRCPointer + 1] & 0xff) << 16) |
                     ((buffer[pointer + CRCPointer + 2] & 0xff) <<  8) |
@@ -51,10 +53,10 @@ class _CRC_ {
                   ORI_CRC_LOOKUP[1][buffer[pointer + CRCPointer + 6] & 0xff] ^ ORI_CRC_LOOKUP[0][buffer[pointer + CRCPointer + 7] & 0xff];
 
             CRCPointer += 8;
-            size -= 8;
+            bufferSize -= 8;
         }
 
-        while (size-- != 0) crc = (crc << 8) ^ ORI_CRC_LOOKUP[0][((crc >>> 24) & 0xff) ^ (buffer[pointer + CRCPointer++] & 0xff)];
+        while (bufferSize-- != 0) crc = (crc << 8) ^ ORI_CRC_LOOKUP[0][((crc >>> 24) & 0xff) ^ (buffer[pointer + CRCPointer++] & 0xff)];
 
         return crc;
     }

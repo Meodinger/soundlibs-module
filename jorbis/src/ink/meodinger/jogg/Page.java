@@ -9,13 +9,6 @@ package ink.meodinger.jogg;
 
 public class Page {
 
-    // ----- Static Fields & Methods ----- //
-
-    /**
-     * Original libogg CRC algorithm, or JOgg CRC algorithm
-     */
-    public static boolean uesOriCRCAlgo = false;
-
     // ----- Instance Fields & Methods ----- //
 
     public byte[] headerBase = null;
@@ -32,7 +25,7 @@ public class Page {
      * @return 0; other numbers indicate an error in page encoding
      */
     public int version() {
-        return (headerBase[headerPointer + 4] & 0xff);
+        return (this.headerBase[this.headerPointer + 4] & 0xff);
     }
 
     /**
@@ -41,7 +34,7 @@ public class Page {
      * @return 0x1 for true, 0x0 for false
      */
     public int continued() {
-        return (headerBase[headerPointer + 5] & 0b0001);
+        return (this.headerBase[this.headerPointer + 5] & 0b0001);
     }
 
     /**
@@ -49,7 +42,7 @@ public class Page {
      * @return > 0 for true, 0x0 for false
      */
     public int bos() {
-        return (headerBase[headerPointer + 5] & 0b0010);
+        return (this.headerBase[this.headerPointer + 5] & 0b0010);
     }
 
     /**
@@ -57,7 +50,7 @@ public class Page {
      * @return > 0 for true, 0x0 for false
      */
     public int eos() {
-        return (headerBase[headerPointer + 5] & 0b0100);
+        return (this.headerBase[this.headerPointer + 5] & 0b0100);
     }
 
     /**
@@ -67,14 +60,14 @@ public class Page {
      * @return The specific last granular position of the decoded data contained in the page
      */
     public long granulePos() {
-        long ret =         (headerBase[headerPointer + 13] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer + 12] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer + 11] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer + 10] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer +  9] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer +  8] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer +  7] & 0xff);
-        ret = (ret << 8) | (headerBase[headerPointer +  6] & 0xff);
+        long ret =         (this.headerBase[this.headerPointer + 13] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer + 12] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer + 11] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer + 10] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer +  9] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer +  8] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer +  7] & 0xff);
+        ret = (ret << 8) | (this.headerBase[this.headerPointer +  6] & 0xff);
 
         return ret;
     }
@@ -85,10 +78,10 @@ public class Page {
      * @return The serial number for this page.
      */
     public int serialNo() {
-        return     (headerBase[headerPointer + 14] & 0xff)
-                | ((headerBase[headerPointer + 15] & 0xff) << 8)
-                | ((headerBase[headerPointer + 16] & 0xff) << 16)
-                | ((headerBase[headerPointer + 17] & 0xff) << 24);
+        return     (this.headerBase[this.headerPointer + 14] & 0xff)
+                | ((this.headerBase[this.headerPointer + 15] & 0xff) << 8)
+                | ((this.headerBase[this.headerPointer + 16] & 0xff) << 16)
+                | ((this.headerBase[this.headerPointer + 17] & 0xff) << 24);
     }
 
     /**
@@ -97,10 +90,10 @@ public class Page {
      * @return The page number for this page
      */
     public int pageNo() {
-        return     (headerBase[headerPointer + 18] & 0xff)
-                | ((headerBase[headerPointer + 19] & 0xff) << 8)
-                | ((headerBase[headerPointer + 20] & 0xff) << 16)
-                | ((headerBase[headerPointer + 21] & 0xff) << 24);
+        return     (this.headerBase[this.headerPointer + 18] & 0xff)
+                | ((this.headerBase[this.headerPointer + 19] & 0xff) << 8)
+                | ((this.headerBase[this.headerPointer + 20] & 0xff) << 16)
+                | ((this.headerBase[this.headerPointer + 21] & 0xff) << 24);
     }
 
     /* NOTE:
@@ -122,10 +115,11 @@ public class Page {
      * this page, it's counted.
      */
     public int packets() {
-        int count = 0, n = headerBase[headerPointer + 26];
+        final int n = this.headerBase[this.headerPointer + 26];
+        int count = 0;
 
         for (int i = 0; i < n; i++)
-            if ((headerBase[headerPointer + 27 + i] & 0xff) < 255)
+            if ((this.headerBase[this.headerPointer + 27 + i] & 0xff) < 255)
                 count++;
 
         return count;
@@ -135,32 +129,44 @@ public class Page {
      * Checksum an ogg page
      */
     public void checksum() {
+        checksum(false);
+    }
+
+    /**
+     * Checksum an ogg page
+     * @param useOriCRCAlgo Use original libogg CRC algorithm, or JOgg CRC algorithm
+     */
+    public void checksum(boolean useOriCRCAlgo) {
         int crc_reg = 0;
 
         // safety; needed for API behavior, but not framing code
-        headerBase[headerPointer + 22] = 0;
-        headerBase[headerPointer + 23] = 0;
-        headerBase[headerPointer + 24] = 0;
-        headerBase[headerPointer + 25] = 0;
+        this.headerBase[this.headerPointer + 22] = 0;
+        this.headerBase[this.headerPointer + 23] = 0;
+        this.headerBase[this.headerPointer + 24] = 0;
+        this.headerBase[this.headerPointer + 25] = 0;
 
-        if (uesOriCRCAlgo) {
-            crc_reg = _CRC_.updateCRC(crc_reg, headerBase, headerPointer, headerBytes);
-            crc_reg = _CRC_.updateCRC(crc_reg, bodyBase, bodyPointer, bodyBytes);
+        if (useOriCRCAlgo) {
+            crc_reg = _CRC_.updateCRC(crc_reg, this.headerBase, this.headerPointer, this.headerBytes);
+            crc_reg = _CRC_.updateCRC(crc_reg, this.bodyBase, this.bodyPointer, this.bodyBytes);
         } else {
             // CRC code copied from `com.jcraft.jogg.Page`
             // Code in libogg is so hard to read
-            for (int i = 0; i < headerBytes; i++) {
-                crc_reg = (crc_reg << 8) ^ _CRC_.CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (headerBase[headerPointer + i] & 0xff)];
+            for (int i = 0; i < this.headerBytes; i++) {
+                crc_reg = (crc_reg << 8)
+                        ^ _CRC_.CRC_LOOKUP[((crc_reg >>> 24) & 0xff)
+                        ^ (this.headerBase[this.headerPointer + i] & 0xff)];
             }
-            for (int i = 0; i < bodyBytes; i++) {
-                crc_reg = (crc_reg << 8) ^ _CRC_.CRC_LOOKUP[((crc_reg >>> 24) & 0xff) ^ (bodyBase[bodyPointer + i] & 0xff)];
+            for (int i = 0; i < this.bodyBytes; i++) {
+                crc_reg = (crc_reg << 8)
+                        ^ _CRC_.CRC_LOOKUP[((crc_reg >>> 24) & 0xff)
+                        ^ (this.bodyBase[this.bodyPointer + i] & 0xff)];
             }
         }
 
-        headerBase[headerPointer + 22] = (byte) ((crc_reg       ) & 0xff);
-        headerBase[headerPointer + 23] = (byte) ((crc_reg >>>  8) & 0xff);
-        headerBase[headerPointer + 24] = (byte) ((crc_reg >>> 16) & 0xff);
-        headerBase[headerPointer + 25] = (byte) ((crc_reg >>> 24) & 0xff);
+        this.headerBase[this.headerPointer + 22] = (byte) ((crc_reg       ) & 0xff);
+        this.headerBase[this.headerPointer + 23] = (byte) ((crc_reg >>>  8) & 0xff);
+        this.headerBase[this.headerPointer + 24] = (byte) ((crc_reg >>> 16) & 0xff);
+        this.headerBase[this.headerPointer + 25] = (byte) ((crc_reg >>> 24) & 0xff);
     }
 
     /**
@@ -174,20 +180,18 @@ public class Page {
      * @param p Destination page which will copy to
      * @return p
      */
-    public Page copy(Page p) {
-        byte[] temp;
-
-        temp = new byte[headerBytes];
-        System.arraycopy(headerBase, headerPointer, temp, 0, headerBytes);
-        p.headerBase = temp;
+    public Page copy(final Page p) {
+        final byte[] header = new byte[this.headerBytes];
+        System.arraycopy(this.headerBase, this.headerPointer, header, 0, this.headerBytes);
+        p.headerBase = header;
         p.headerPointer = 0;
-        p.headerBytes = headerBytes;
+        p.headerBytes = this.headerBytes;
 
-        temp = new byte[bodyBytes];
-        System.arraycopy(bodyBase, bodyPointer, temp, 0, bodyBytes);
-        p.bodyBase = temp;
+        final byte[] body = new byte[this.bodyBytes];
+        System.arraycopy(this.bodyBase, this.bodyPointer, body, 0, this.bodyBytes);
+        p.bodyBase = body;
         p.bodyPointer = 0;
-        p.bodyBytes = bodyBytes;
+        p.bodyBytes = this.bodyBytes;
 
         return p;
     }

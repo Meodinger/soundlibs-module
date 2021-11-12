@@ -153,7 +153,7 @@ public class Sync {
      *             this size plus some extra bytes (currently 4096).
      * @return Next segment pointer; a segment at least as large as requested at the fill mark
      */
-    public int buffer(int size) {
+    public int buffer(final int size) {
         // if (check() != 0) return -1;
 
         // First, clear out any space that has been previously returned
@@ -194,7 +194,7 @@ public class Sync {
      * @param bytes Number of bytes of new data written
      * @return -1 when overflows, or internal error occurred; 0 otherwise
      */
-    public int wrote(int bytes) {
+    public int wrote(final int bytes) {
         // if (check() != 0) return -1;
 
         if (this.fill + bytes > this.storage) return -1;
@@ -217,11 +217,11 @@ public class Sync {
      *          0 Page not ready; more data (no bytes skipped)
      *          n Page synced at current location; page length n bytes
      */
-    public int pageSeek(Page p) {
+    public int pageSeek(final Page p) {
         // if (check() != 0) return -1;
 
-        int pagePointer = this.returned;
-        int bytes = this.fill - this.returned;
+        final int pagePointer = this.returned;
+        final int bytes = this.fill - this.returned;
 
         if (this.headerBytes == 0) {
             // not enough for a header
@@ -254,7 +254,7 @@ public class Sync {
                 return (-(nextPointer - pagePointer));
             }
 
-            int headerBytes = (this.data[pagePointer + 26] & 0xff) + 27;
+            final int headerBytes = (this.data[pagePointer + 26] & 0xff) + 27;
 
             // not enough for header + seg table
             if (bytes < headerBytes) return 0;
@@ -278,7 +278,7 @@ public class Sync {
             this.data[pagePointer + 25] = 0;
 
             // set up a temp page struct and recompute the checksum
-            Page temp = this.pageSeeked;
+            final Page temp = this.pageSeeked;
             temp.headerBase = this.data;
             temp.headerPointer = pagePointer;
             temp.headerBytes = this.headerBytes;
@@ -325,7 +325,7 @@ public class Sync {
             p.bodyBytes = this.bodyBytes;
         }
 
-        int newBytes = this.headerBytes + this.bodyBytes;
+        final int newBytes = this.headerBytes + this.bodyBytes;
 
         this.unSynced = 0;
         this.returned += newBytes;
@@ -345,7 +345,7 @@ public class Sync {
      *          0: need more data
      *          1: page returned
      */
-    public int pageOut(Page p) {
+    public int pageOut(final Page p) {
         // if (check() != 0) return 0;
 
         // All we need to do is verify a page at the head of the stream buffer

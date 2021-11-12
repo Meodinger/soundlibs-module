@@ -63,14 +63,14 @@ public class Buffer {
      * Initialize buffer
      */
     public void writeInit() {
-        endByte = 0;
-        endBit = 0;
+        this.endByte = 0;
+        this.endBit = 0;
 
-        buffer = new byte[BUFFER_INCREMENT];
-        buffer[0] = 0x0;
+        this.buffer = new byte[BUFFER_INCREMENT];
+        this.buffer[0] = 0x0;
 
-        pointer = 0;
-        storage = BUFFER_INCREMENT;
+        this.pointer = 0;
+        this.storage = BUFFER_INCREMENT;
     }
 
     /**
@@ -82,10 +82,10 @@ public class Buffer {
         final int _endBytes = bits >> 3;
         final int _endBit = bits - _endBytes * 8;
 
-        pointer = _endBytes;
-        endByte = _endBytes;
-        endBit  = _endBit;
-        buffer[pointer] &= MASK[_endBit];
+        this.pointer = _endBytes;
+        this.endByte = _endBytes;
+        this.endBit  = _endBit;
+        this.buffer[this.pointer] &= MASK[_endBit];
     }
 
     /**
@@ -94,7 +94,7 @@ public class Buffer {
      * Only 32 bits can be written at a time
      */
     public void writeAlign() {
-        final int bits = 8 - endBit;
+        final int bits = 8 - this.endBit;
         if (bits < 8) write(0, bits);
     }
 
@@ -102,7 +102,7 @@ public class Buffer {
      * Clear buffer
      */
     public void writeClear() {
-        buffer = null;
+        this.buffer = null;
     }
 
     @Deprecated(forRemoval = true)
@@ -139,43 +139,43 @@ public class Buffer {
         // Buffer cannot contain all bits, increase buffer length.
         // enByte + 4 because length of int is 32 (4 * 8 byte -> 32 bits).
         // use -4 in case of endByte + 4 > Int.MAX_VALUE.
-        if (endByte >= storage - 4) {
+        if (this.endByte >= this.storage - 4) {
             // if (storage > Integer.MAX_VALUE - BUFFER_INCREMENT) { /* err */ }
 
-            final int newStorage = storage + BUFFER_INCREMENT;
+            final int newStorage = this.storage + BUFFER_INCREMENT;
             final byte[] newBuffer = new byte[newStorage];
 
-            System.arraycopy(buffer, 0, newBuffer, 0, storage);
-            buffer = newBuffer;
-            storage = newStorage;
+            System.arraycopy(this.buffer, 0, newBuffer, 0, this.storage);
+            this.buffer = newBuffer;
+            this.storage = newStorage;
         }
 
         // use mask to take valid bits
         final int validValue = value & mask;
         // move to current bit index (how many bits will be actually write)
-        final int actualBits = bits + endBit;
+        final int actualBits = bits + this.endBit;
 
         // write to byte at the end
-        buffer[pointer] |= (byte) (validValue << endBit);
+        this.buffer[this.pointer] |= (byte) (validValue << this.endBit);
         // write to following bytes if value contains more than one byte
         if (actualBits >= 8) {
-            buffer[pointer + 1] = (byte) (validValue >>> (8 - endBit));
+            this.buffer[this.pointer + 1] = (byte) (validValue >>> (8 - this.endBit));
             if (actualBits >= 16) {
-                buffer[pointer + 2] = (byte) (validValue >>> (16 - endBit));
+                this.buffer[this.pointer + 2] = (byte) (validValue >>> (16 - this.endBit));
                 if (actualBits >= 24) {
-                    buffer[pointer + 3] = (byte) (validValue >>> (24 - endBit));
+                    this.buffer[this.pointer + 3] = (byte) (validValue >>> (24 - this.endBit));
                     if (actualBits >= 32) {
-                        if (endBit > 0) buffer[pointer + 4] = (byte) (validValue >>> (32 - endBit));
-                        else buffer[pointer + 4] = 0;
+                        if (this.endBit > 0) this.buffer[this.pointer + 4] = (byte) (validValue >>> (32 - this.endBit));
+                        else this.buffer[this.pointer + 4] = 0;
                     }
                 }
             }
         }
 
         // update state
-        pointer += actualBits / 8; // equal to endByte
-        endByte += actualBits / 8; // endByte index
-        endBit   = actualBits & 7; // endBit range is 0 -> 7
+        this.pointer += actualBits / 8; // equal to endByte
+        this.endByte += actualBits / 8; // endByte index
+        this.endBit   = actualBits & 7; // endBit range is 0 -> 7
     }
 
     // ----- Read ----- //
@@ -196,11 +196,11 @@ public class Buffer {
      * @param bytes buffer length
      */
     public void readInit(final byte[] buf, final int start, final int bytes) {
-        buffer = buf;
-        pointer = start;
-        endByte = 0;
-        endBit = 0;
-        storage = bytes;
+        this.buffer = buf;
+        this.pointer = start;
+        this.endByte = 0;
+        this.endBit = 0;
+        this.storage = bytes;
     }
 
     /**
@@ -225,15 +225,15 @@ public class Buffer {
         // Mask must be set here because bits will change
         final int mask = MASK[bits];
         // Move to current bit index (how many bits will be actually read)
-        final int actualBits = bits + endBit;
+        final int actualBits = bits + this.endBit;
 
         // End of buffer encountered
-        if (endByte >= storage - 4) {
-            if (endByte > (storage - ((actualBits + 7) >> 3))) {
+        if (this.endByte >= this.storage - 4) {
+            if (this.endByte > (this.storage - ((actualBits + 7) >> 3))) {
                 // If really read out of range, return -1
-                pointer = storage - 1; // ?? pointer = NULL
-                endByte = storage;
-                endBit  = 1;
+                this.pointer = this.storage - 1; // ?? pointer = NULL
+                this.endByte = this.storage;
+                this.endBit  = 1;
                 return -1;
             } else if (actualBits == 0) return 0;
             // special case to avoid reading b->ptr[0],
@@ -242,16 +242,16 @@ public class Buffer {
         }
 
         // Read current byte
-        int ret = (buffer[pointer] & 0xff) >>> endBit;
+        int ret = (this.buffer[this.pointer] & 0xff) >>> this.endBit;
         // Read more bytes if needed
         if (actualBits > 8) {
-            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
+            ret |= (this.buffer[this.pointer + 1] & 0xff) << (8 - this.endBit);
             if (actualBits > 16) {
-                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
+                ret |= (this.buffer[this.pointer + 2] & 0xff) << (16 - this.endBit);
                 if (actualBits > 24) {
-                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
-                    if (actualBits > 32 && endBit != 0) {
-                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
+                    ret |= (this.buffer[this.pointer + 3] & 0xff) << (24 - this.endBit);
+                    if (actualBits > 32 && this.endBit != 0) {
+                        ret |= (this.buffer[this.pointer + 4] & 0xff) << (32 - this.endBit);
                     }
                 }
             }
@@ -259,9 +259,9 @@ public class Buffer {
         ret &= mask;
 
         // Update state
-        pointer += actualBits / 8;
-        endByte += actualBits / 8;
-        endBit   = actualBits & 7;
+        this.pointer += actualBits / 8;
+        this.endByte += actualBits / 8;
+        this.endBit   = actualBits & 7;
 
         return ret;
     }
@@ -271,20 +271,20 @@ public class Buffer {
      * @return bit as int
      */
     public int readOne() {
-        if (endByte >= storage) {
+        if (this.endByte >= this.storage) {
             // If really read out of range, return -1
-            pointer = storage - 1; // ?? pointer = NULL
-            endByte = storage;
-            endBit  = 1;
+            this.pointer = this.storage - 1; // ?? pointer = NULL
+            this.endByte = this.storage;
+            this.endBit  = 1;
             return -1;
         }
 
-        int ret = (buffer[pointer] >>> endBit) & 0x1;
+        final int ret = (this.buffer[this.pointer] >>> this.endBit) & 0x1;
 
-        if (++endBit > 7) {
-            pointer++;
-            endByte++;
-            endBit = 0;
+        if (++this.endBit > 7) {
+            this.pointer++;
+            this.endByte++;
+            this.endBit = 0;
         }
         return ret;
     }
@@ -295,11 +295,11 @@ public class Buffer {
      * reset buffer
      */
     public void reset() {
-        buffer[0] = 0x0;
+        this.buffer[0] = 0x0;
 
-        pointer = 0;
-        endByte = 0;
-        endBit = 0;
+        this.pointer = 0;
+        this.endByte = 0;
+        this.endBit = 0;
     }
 
     /**
@@ -309,10 +309,10 @@ public class Buffer {
      */
     public int look(final int bits) {
         final int mask = MASK[bits];
-        final int actualBits = bits + endBit;
+        final int actualBits = bits + this.endBit;
 
-        if (endByte >= storage - 4) {
-            if (endByte > (storage - ((actualBits + 7) >> 3))) return -1;
+        if (this.endByte >= this.storage - 4) {
+            if (this.endByte > (this.storage - ((actualBits + 7) >> 3))) return -1;
             // special case to avoid reading b->ptr[0],
             // which might be past the end of the buffer;
             // also skips some useless accounting.
@@ -320,16 +320,16 @@ public class Buffer {
         }
 
         // Look current byte
-        int ret = (buffer[pointer] & 0xff) >>> endBit;
+        int ret = (this.buffer[this.pointer] & 0xff) >>> this.endBit;
         // Look more bytes if needed
         if (actualBits > 8) {
-            ret |= (buffer[pointer + 1] & 0xff) << (8 - endBit);
+            ret |= (this.buffer[this.pointer + 1] & 0xff) << (8 - this.endBit);
             if (actualBits > 16) {
-                ret |= (buffer[pointer + 2] & 0xff) << (16 - endBit);
+                ret |= (this.buffer[this.pointer + 2] & 0xff) << (16 - this.endBit);
                 if (actualBits > 24) {
-                    ret |= (buffer[pointer + 3] & 0xff) << (24 - endBit);
-                    if (actualBits > 32 && endBit != 0) {
-                        ret |= (buffer[pointer + 4] & 0xff) << (32 - endBit);
+                    ret |= (this.buffer[this.pointer + 3] & 0xff) << (24 - this.endBit);
+                    if (actualBits > 32 && this.endBit != 0) {
+                        ret |= (this.buffer[this.pointer + 4] & 0xff) << (32 - this.endBit);
                     }
                 }
             }
@@ -343,8 +343,8 @@ public class Buffer {
      * @return one bit as int
      */
     public int lookOne() {
-        if (endByte >= storage) return -1;
-        return ((buffer[pointer] >> endBit) & 0x1);
+        if (this.endByte >= this.storage) return -1;
+        return ((this.buffer[this.pointer] >> this.endBit) & 0x1);
     }
 
     /**
@@ -352,21 +352,21 @@ public class Buffer {
      * @param bits length of bits to skip
      */
     public void advance(final int bits) {
-        final int actualBits = bits + endBit;
+        final int actualBits = bits + this.endBit;
 
-        pointer += actualBits / 8;
-        endByte += actualBits / 8;
-        endBit   = actualBits & 7;
+        this.pointer += actualBits / 8;
+        this.endByte += actualBits / 8;
+        this.endBit   = actualBits & 7;
     }
 
     /**
      * Skip one bit
      */
     public void advanceOne() {
-        if (++endBit > 7) {
-            pointer++;
-            endByte++;
-            endBit = 0;
+        if (++this.endBit > 7) {
+            this.pointer++;
+            this.endByte++;
+            this.endBit = 0;
         }
     }
 
@@ -377,7 +377,7 @@ public class Buffer {
      * @return bytes count
      */
     public int bytes() {
-        return (endByte + (endBit + 7) / 8);
+        return (this.endByte + (this.endBit + 7) / 8);
     }
 
     /**
@@ -385,14 +385,14 @@ public class Buffer {
      * @return bits count
      */
     public int bits() {
-        return (endByte * 8 + endBit);
+        return (this.endByte * 8 + this.endBit);
     }
 
     /**
      * Get internal buffer
      */
     public byte[] buffer() {
-        return buffer;
+        return this.buffer;
     }
 
     // ----- Static Write Copy ----- //

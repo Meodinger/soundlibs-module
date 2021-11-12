@@ -143,7 +143,7 @@ public class Stream {
      * Also assigns the stream a given serial number.
      * @param serialNo Stream serial number
      */
-    public void init(int serialNo) {
+    public void init(final int serialNo) {
         init();
         this.serialNo = serialNo;
     }
@@ -204,7 +204,7 @@ public class Stream {
      * Additionally, it sets the stream serial number to the given value.
      * @param serialNo New stream serial number to use
      */
-    public void reset(int serialNo) {
+    public void reset(final int serialNo) {
         // if (check() != 0) return -1;
 
         reset();
@@ -241,7 +241,7 @@ public class Stream {
     public int eos() {
         // if (check() != 0) return 1;
 
-        return eos;
+        return this.eos;
     }
 
     // ----- private api ----- //
@@ -251,7 +251,7 @@ public class Stream {
      * @param needed bytes needed
      * @return 0 success; -1 error
      */
-    private int bodyExpand(int needed) {
+    private int bodyExpand(final int needed) {
         if (this.bodyStorage - needed <= this.bodyFill) {
             if (this.bodyStorage > Integer.MAX_VALUE - needed) {
                 clear();
@@ -261,7 +261,7 @@ public class Stream {
             int newStorage = this.bodyStorage + needed;
             if (newStorage < Integer.MAX_VALUE - 1024) newStorage += 1024;
 
-            byte[] newData = new byte[newStorage];
+            final byte[] newData = new byte[newStorage];
             System.arraycopy(this.bodyData, 0, newData, 0, this.bodyData.length);
             this.bodyData = newData;
             this.bodyStorage = newStorage;
@@ -274,7 +274,7 @@ public class Stream {
      * @param needed bytes needed
      * @return 0 success; -1 error
      */
-    private int lacingExpand(int needed) {
+    private int lacingExpand(final int needed) {
         if (this.lacingStorage - needed <= this.lacingFill) {
             if (this.lacingStorage > Integer.MAX_VALUE - needed) {
                 clear();
@@ -284,11 +284,11 @@ public class Stream {
             int newStorage = this.lacingStorage + needed;
             if (newStorage < Integer.MAX_VALUE - 32) newStorage += 32;
 
-            long[] newGranules = new long[newStorage];
+            final long[] newGranules = new long[newStorage];
             System.arraycopy(this.granuleValues, 0, newGranules, 0, this.granuleValues.length);
             this.granuleValues = newGranules;
 
-            int[] newLacing = new int[newStorage];
+            final int[] newLacing = new int[newStorage];
             System.arraycopy(this.lacingValues, 0, newLacing, 0, this.lacingValues.length);
             this.lacingValues = newLacing;
 
@@ -302,7 +302,7 @@ public class Stream {
      * @param inputs Array of data will be copied to Stream
      * @return 0 success; -1 error
      */
-    private int bytesIn(byte[][] inputs, int[] inputPointers, int[] inputBytes, int eos, long granulePos) {
+    private int bytesIn(final byte[][] inputs, final int[] inputPointers, final int[] inputBytes, final int eos, final long granulePos) {
         // if (check() != 0) return -1;
 
         if (inputs == null || inputs.length == 0) return 0;
@@ -374,7 +374,7 @@ public class Stream {
      *             A Stream has been cleared explicitly or implicitly due to an internal error;
      *        else remaining packets have successfully been flushed into the page
      */
-    private int flushInternal(Page page, int force, int nFill) {
+    private int flushInternal(final Page page, final int force, final int nFill) {
         // if (check() != 0) return 0;
 
         final int maxValues = Math.min(255, this.lacingFill);
@@ -384,6 +384,8 @@ public class Stream {
         int bytes = 0;
         long acc = 0;
         long granulePos = -1;
+
+        int newForce = force;
 
         // Construct a page
         // Decide how many segments to include
@@ -410,7 +412,7 @@ public class Stream {
             int packetsJustDone = 0;
             for (values = 0; values < maxValues; values++) {
                 if (acc > nFill && packetsJustDone >= 4) {
-                    force = 1;
+                    newForce = 1;
                     break;
                 }
                 acc += this.lacingValues[values] & 0xff;
@@ -421,10 +423,10 @@ public class Stream {
                     packetsJustDone = 0;
                 }
             }
-            if (values == 255) force = 1;
+            if (values == 255) newForce = 1;
         }
 
-        if (force == 0) return 0;
+        if (newForce == 0) return 0;
 
         // Construct the header in temp storage
         System.arraycopy("OggS".getBytes(), 0, this.headerData, 0, 4);
@@ -436,7 +438,7 @@ public class Stream {
         // Continued packet flag?
         if ((this.lacingValues[0] & 0x0100) == 0) this.headerData[5] |= 0b0001;
         // First page flag?
-        if (this.bos == 0) headerData[5] |= 0b0010;
+        if (this.bos == 0) this.headerData[5] |= 0b0010;
         // Last page flag?
         if (this.eos != 0 && this.lacingFill == values) this.headerData[5] |= 0b0100;
         this.bos = 1;
@@ -505,7 +507,7 @@ public class Stream {
     /**
      * For packetOut/Peek ues
      */
-    private int packetOutInternal(Packet packet, int advance) {
+    private int packetOutInternal(final Packet packet, final int advance) {
         // The last part of decode. We have the stream broken into packet segments.
         // Now we need to group them into packets (or return the out of sync markers)
 
@@ -573,7 +575,7 @@ public class Stream {
      * @param packet Packet will be copied to Stream
      * @return 0 success; -1 error
      */
-    public int packetIn(Packet packet) {
+    public int packetIn(final Packet packet) {
         return bytesIn(new byte[][] { packet.data }, new int[] { packet.pointer }, new int[] { packet.bytes }, packet.eos, packet.granulePos);
     }
 
@@ -602,7 +604,7 @@ public class Stream {
      *         1 A packet was assembled normally.
      *           `packet` contains the next packet from the stream.
      */
-    public int packetOut(Packet packet) {
+    public int packetOut(final Packet packet) {
         // if (check() != 0) return 0;
         return packetOutInternal(packet, 1);
     }
@@ -620,7 +622,7 @@ public class Stream {
      *          0 Insufficient data available to complete a packet, or unrecoverable internal error occurred.
      *          1 A packet is available.
      */
-    public int packetPeek(Packet packet) {
+    public int packetPeek(final Packet packet) {
         // if (check() != 0) return 0;
         return packetOutInternal(packet, 0);
     }
@@ -637,7 +639,7 @@ public class Stream {
      *         match the serial number of the bitstream, the page version was incorrect,
      *         or an internal error occurred.
      */
-    public int pageIn(Page page) {
+    public int pageIn(final Page page) {
         final byte[] headerBase = page.headerBase;
         int headerPointer = page.headerPointer;
 
@@ -709,17 +711,16 @@ public class Stream {
                 this.lacingValues[this.lacingFill++] = 0x0400;
                 this.lacingPacket++;
             }
+        }
 
-            // Are we a 'continued packet' page?
-            // If so, we'll need to skip some segments
-            if (continued != 0) {
-                if (this.lacingFill < 1
-                || (this.lacingValues[this.lacingFill - 1]) == 0x0400
-                || (this.lacingValues[this.lacingFill - 1] & 0xff) < 255
-                ) {
-                    newBos = 0;
-                }
-
+        // Are we a 'continued packet' page?
+        // If so, we'll need to skip some segments
+        if (continued != 0) {
+            if ((this.lacingFill < 1)
+             || (this.lacingValues[this.lacingFill - 1] == 0x0400)
+             || (this.lacingValues[this.lacingFill - 1] & 0xff) < 255
+            ) {
+                newBos = 0;
                 for (; segmentPointer < segments; segmentPointer++) {
                     int val = headerBase[headerPointer + 27 + segmentPointer] & 0xff;
                     bodyPointer += val;
@@ -792,10 +793,9 @@ public class Stream {
      *             or an internal error occurred. In this case og is not modified.
      *        else a page has been completed and returned.
      */
-    public int pageOut(Page page) {
+    public int pageOut(final Page page) {
         // if (check() != 0) return 0;
         int force = 0;
-        //  'were done, now flush' case                 'initial header page' case
         //  'were done, now flush' case                 'initial header page' case
         if ((this.eos != 0 && this.lacingFill != 0) || (this.bos == 0 && this.lacingFill != 0)) force = 1;
         return flushInternal(page, force, 4096);
@@ -823,7 +823,7 @@ public class Stream {
      *             or an internal error occurred. In this case og is not modified.
      *        else a page has been completed and returned.
      */
-    public int pageOutFill(Page page, int nFill) {
+    public int pageOutFill(final Page page, final int nFill) {
         // if (check() != 0) return 0;
         int force = 0;
         //  'were done, now flush' case                 'initial header page' case
@@ -848,7 +848,7 @@ public class Stream {
      *             A Stream has been cleared explicitly or implicitly due to an internal error;
      *        else remaining packets have successfully been flushed into the page
      */
-    public int flush(Page page) {
+    public int flush(final Page page) {
         return flushInternal(page, 1, 4096);
     }
 
@@ -872,7 +872,7 @@ public class Stream {
      *             A Stream has been cleared explicitly or implicitly due to an internal error;
      *        else remaining packets have successfully been flushed into the page
      */
-    public int flushFill(Page page, int nFill) {
+    public int flushFill(final Page page, final int nFill) {
         return flushInternal(page, 1, nFill);
     }
 
