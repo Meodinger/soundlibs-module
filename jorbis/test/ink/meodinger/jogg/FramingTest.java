@@ -417,22 +417,19 @@ public class FramingTest {
         return 0;
     }
 
+    private static int sequence = 0;
+    private static int lastNo = 0;
     private static void checkPacket(Packet packet, int len, int no, long pos) {
-        int sequence = 0;
-        int lastNo = 0;
-
         assertEquals("Incorrect packet length", len, packet.bytes);
         assertEquals("Incorrect packet granulePos", pos, packet.granulePos);
 
         // Packet number just follows sequence/gap, adjust the input number for that
         if (no == 0) {
-            //noinspection ConstantConditions
             sequence = 0;
         } else {
             sequence++;
             if (no > lastNo + 1) sequence++;
         }
-        //noinspection UnusedAssignment
         lastNo = no;
         assertEquals("Incorrect packet sequence", sequence, packet.packetNo);
 
@@ -495,7 +492,7 @@ public class FramingTest {
         for (int i = 0; i < packets; i++) {
             // Construct a test packet
             Packet packet = new Packet();
-            int len = pl[i];
+            final int len = pl[i];
 
             packet.data = data;
             packet.pointer = inputPointer;
@@ -765,6 +762,7 @@ public class FramingTest {
         System.out.print("Testing zero data page (1 nil packet)... ");
         testPack(packets, headers, 0, 0, 0);
     }
+
 
     // Pages test
     private final Page[] pages = new Page[5];

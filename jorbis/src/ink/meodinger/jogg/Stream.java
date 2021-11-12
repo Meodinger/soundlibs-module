@@ -340,7 +340,6 @@ public class Stream {
         for (int i = 0; i < inputCount; i++) {
             System.arraycopy(inputs[i], inputPointers[i], this.bodyData, this.bodyFill, inputBytes[i]);
             this.bodyFill += inputBytes[i];
-            int c = 0;
         }
 
         // Store lacing values for this packet
@@ -457,7 +456,8 @@ public class Stream {
 
         // 32 bits of page counter
         // (we have both counter and page header because this val can roll over)
-        /// because someone called reset();
+
+        // because someone called reset();
         // this would be a strange thing to do in an encoding stream,
         // but it has plausible uses
         if (this.pageNo == -1) this.pageNo = 0;
@@ -536,8 +536,8 @@ public class Stream {
         int bytes = size;
         while (size == 255) {
             int val = this.lacingValues[++pointer];
-            size = val & 0xff;
             if ((val & 0x0200) != 0) eos = 0x0200;
+            size = val & 0xff;
             bytes += size;
         }
 
@@ -714,8 +714,8 @@ public class Stream {
             // If so, we'll need to skip some segments
             if (continued != 0) {
                 if (this.lacingFill < 1
-                || (this.lacingValues[this.lacingFill - 1] & 0xff) < 255
                 || (this.lacingValues[this.lacingFill - 1]) == 0x0400
+                || (this.lacingValues[this.lacingFill - 1] & 0xff) < 255
                 ) {
                     newBos = 0;
                 }
@@ -795,6 +795,7 @@ public class Stream {
     public int pageOut(Page page) {
         // if (check() != 0) return 0;
         int force = 0;
+        //  'were done, now flush' case                 'initial header page' case
         //  'were done, now flush' case                 'initial header page' case
         if ((this.eos != 0 && this.lacingFill != 0) || (this.bos == 0 && this.lacingFill != 0)) force = 1;
         return flushInternal(page, force, 4096);
