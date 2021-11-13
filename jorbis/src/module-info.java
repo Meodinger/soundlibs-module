@@ -6,6 +6,5 @@
 
 module jorbis {
     exports ink.meodinger.jogg;
-    exports ink.meodinger.jorbis.vorbis;
-    exports ink.meodinger.jorbis.codec;
+    exports ink.meodinger.jorbis;
 }

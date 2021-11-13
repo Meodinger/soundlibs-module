@@ -533,14 +533,14 @@ public class FramingTest {
 
                 byteSkipCount += page.headerBytes;
                 if (byteSkipCount > byteSkip) {
-                    System.arraycopy(page.headerBase, page.headerPointer, sync.data, nextPointer, byteSkipCount - byteSkip);
+                    System.arraycopy(page.headerBase, page.headerPointer, sync.data(), nextPointer, byteSkipCount - byteSkip);
                     nextPointer += (byteSkipCount - byteSkip);
                     byteSkipCount = byteSkip;
                 }
 
                 byteSkipCount += page.bodyBytes;
                 if (byteSkipCount > byteSkip) {
-                    System.arraycopy(page.bodyBase, page.bodyPointer, sync.data, nextPointer, byteSkipCount - byteSkip);
+                    System.arraycopy(page.bodyBase, page.bodyPointer, sync.data(), nextPointer, byteSkipCount - byteSkip);
                     nextPointer += (byteSkipCount - byteSkip);
                     byteSkipCount = byteSkip;
                 }
@@ -810,11 +810,11 @@ public class FramingTest {
         int pointer;
         for (int i = 0; i < 5; i++) {
             pointer = sync.buffer(pages[i].headerBytes);
-            System.arraycopy(pages[i].headerBase, pages[i].headerPointer, sync.data, pointer, pages[i].headerBytes);
+            System.arraycopy(pages[i].headerBase, pages[i].headerPointer, sync.data(), pointer, pages[i].headerBytes);
             sync.wrote(pages[i].headerBytes);
 
             pointer = sync.buffer(pages[i].bodyBytes);
-            System.arraycopy(pages[i].bodyBase, pages[i].bodyPointer, sync.data, pointer, pages[i].bodyBytes);
+            System.arraycopy(pages[i].bodyBase, pages[i].bodyPointer, sync.data(), pointer, pages[i].bodyBytes);
             sync.wrote(pages[i].bodyBytes);
         }
 
@@ -864,11 +864,11 @@ public class FramingTest {
         int pointer;
         for (int i = 0; i < 5; i++) {
             pointer = sync.buffer(pages[i].headerBytes);
-            System.arraycopy(pages[i].headerBase, pages[i].headerPointer, sync.data, pointer, pages[i].headerBytes);
+            System.arraycopy(pages[i].headerBase, pages[i].headerPointer, sync.data(), pointer, pages[i].headerBytes);
             sync.wrote(pages[i].headerBytes);
 
             pointer = sync.buffer(pages[i].bodyBytes);
-            System.arraycopy(pages[i].bodyBase, pages[i].bodyPointer, sync.data, pointer, pages[i].bodyBytes);
+            System.arraycopy(pages[i].bodyBase, pages[i].bodyPointer, sync.data(), pointer, pages[i].bodyBytes);
             sync.wrote(pages[i].bodyBytes);
         }
 
@@ -929,35 +929,35 @@ public class FramingTest {
 
         // Test fractional page inputs: incomplete capture
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data, pointer, 3);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data(), pointer, 3);
         sync.wrote(3);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         // Test fractional page inputs: incomplete fixed header
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 3, sync.data, pointer, 20);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 3, sync.data(), pointer, 20);
         sync.wrote(20);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         // Test fractional page inputs: incomplete header
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 23, sync.data, pointer, 5);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 23, sync.data(), pointer, 5);
         sync.wrote(5);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         // Test fractional page inputs: incomplete body
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 28, sync.data, pointer, pages[1].headerBytes - 28);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 28, sync.data(), pointer, pages[1].headerBytes - 28);
         sync.wrote(pages[1].headerBytes - 28);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data, pointer, 1000);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data(), pointer, 1000);
         sync.wrote(1000);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer + 1000, sync.data, pointer, pages[1].bodyBytes - 1000);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer + 1000, sync.data(), pointer, pages[1].bodyBytes - 1000);
         sync.wrote(pages[1].bodyBytes - 1000);
         assertFalse(sync.pageOut(decodePage) <= 0);
 
@@ -975,25 +975,25 @@ public class FramingTest {
         sync.reset();
 
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data, pointer, pages[1].headerBytes);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data(), pointer, pages[1].headerBytes);
         sync.wrote(pages[1].headerBytes);
 
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data, pointer, pages[1].bodyBytes);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data(), pointer, pages[1].bodyBytes);
         sync.wrote(pages[1].bodyBytes);
 
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data, pointer, 20);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data(), pointer, 20);
         sync.wrote(20);
         assertFalse(sync.pageOut(decodePage) <= 0);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 20, sync.data, pointer, pages[1].headerBytes - 20);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer + 20, sync.data(), pointer, pages[1].headerBytes - 20);
         sync.wrote(pages[1].headerBytes - 20);
 
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data, pointer, pages[1].bodyBytes);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data(), pointer, pages[1].bodyBytes);
         sync.wrote(pages[1].bodyBytes);
         assertFalse(sync.pageOut(decodePage) <= 0);
 
@@ -1012,30 +1012,30 @@ public class FramingTest {
 
         // garbage
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data, pointer, pages[1].bodyBytes);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data(), pointer, pages[1].bodyBytes);
         sync.wrote(pages[1].bodyBytes);
 
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data, pointer, pages[1].headerBytes);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data(), pointer, pages[1].headerBytes);
         sync.wrote(pages[1].headerBytes);
 
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data, pointer, pages[1].bodyBytes);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data(), pointer, pages[1].bodyBytes);
         sync.wrote(pages[1].bodyBytes);
 
         pointer = sync.buffer(pages[2].headerBytes);
-        System.arraycopy(pages[2].headerBase, pages[2].headerPointer, sync.data, pointer, 20);
+        System.arraycopy(pages[2].headerBase, pages[2].headerPointer, sync.data(), pointer, 20);
         sync.wrote(20);
         assertFalse(sync.pageOut(decodePage) > 0);
         assertFalse(sync.pageOut(decodePage) <= 0);
         assertFalse(sync.pageOut(decodePage) > 0);
 
         pointer = sync.buffer(pages[2].headerBytes);
-        System.arraycopy(pages[2].headerBase, pages[2].headerPointer + 20, sync.data, pointer, pages[2].headerBytes - 20);
+        System.arraycopy(pages[2].headerBase, pages[2].headerPointer + 20, sync.data(), pointer, pages[2].headerBytes - 20);
         sync.wrote(pages[2].headerBytes - 20);
 
         pointer = sync.buffer(pages[2].bodyBytes);
-        System.arraycopy(pages[2].bodyBase, pages[2].bodyPointer, sync.data, pointer, pages[2].bodyBytes);
+        System.arraycopy(pages[2].bodyBase, pages[2].bodyPointer, sync.data(), pointer, pages[2].bodyBytes);
         sync.wrote(pages[2].bodyBytes);
         assertFalse(sync.pageOut(decodePage) <= 0);
 
@@ -1054,35 +1054,35 @@ public class FramingTest {
 
         // page
         pointer = sync.buffer(pages[1].headerBytes);
-        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data, pointer, pages[1].headerBytes);
+        System.arraycopy(pages[1].headerBase, pages[1].headerPointer, sync.data(), pointer, pages[1].headerBytes);
         sync.wrote(pages[1].headerBytes);
 
         pointer = sync.buffer(pages[1].bodyBytes);
-        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data, pointer, pages[1].bodyBytes);
+        System.arraycopy(pages[1].bodyBase, pages[1].bodyPointer, sync.data(), pointer, pages[1].bodyBytes);
         sync.wrote(pages[1].bodyBytes);
 
         // Garbage
         pointer = sync.buffer(pages[2].headerBytes);
-        System.arraycopy(pages[2].headerBase, pages[2].headerPointer, sync.data, pointer, pages[2].headerBytes);
+        System.arraycopy(pages[2].headerBase, pages[2].headerPointer, sync.data(), pointer, pages[2].headerBytes);
         sync.wrote(pages[2].headerBytes);
 
         pointer = sync.buffer(pages[2].headerBytes);
-        System.arraycopy(pages[2].headerBase, pages[2].headerPointer, sync.data, pointer, pages[2].headerBytes);
+        System.arraycopy(pages[2].headerBase, pages[2].headerPointer, sync.data(), pointer, pages[2].headerBytes);
         sync.wrote(pages[2].headerBytes);
 
         assertFalse(sync.pageOut(decodePage) <= 0);
 
         pointer = sync.buffer(pages[2].bodyBytes);
-        System.arraycopy(pages[2].bodyBase, pages[2].bodyPointer, sync.data, pointer, pages[2].bodyBytes - 5);
+        System.arraycopy(pages[2].bodyBase, pages[2].bodyPointer, sync.data(), pointer, pages[2].bodyBytes - 5);
         sync.wrote(pages[2].bodyBytes - 5);
 
         // page
         pointer = sync.buffer(pages[3].headerBytes);
-        System.arraycopy(pages[3].headerBase, pages[3].headerPointer, sync.data, pointer, pages[3].headerBytes);
+        System.arraycopy(pages[3].headerBase, pages[3].headerPointer, sync.data(), pointer, pages[3].headerBytes);
         sync.wrote(pages[3].headerBytes);
 
         pointer = sync.buffer(pages[3].bodyBytes);
-        System.arraycopy(pages[3].bodyBase, pages[3].bodyPointer, sync.data, pointer, pages[3].bodyBytes);
+        System.arraycopy(pages[3].bodyBase, pages[3].bodyPointer, sync.data(), pointer, pages[3].bodyBytes);
         sync.wrote(pages[3].bodyBytes);
 
         assertFalse(sync.pageOut(decodePage) > 0);

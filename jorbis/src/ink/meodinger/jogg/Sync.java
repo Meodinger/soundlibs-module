@@ -11,7 +11,7 @@ public class Sync {
     /**
      * Buffered stream data.
      */
-    public byte[] data = null;
+    private byte[] data = null;
 
     /**
      * Current allocated size of the stream buffer held in data
@@ -133,6 +133,10 @@ public class Sync {
 
     public int bufferOffset() {
         return this.fill;
+    }
+
+    public byte[] data() {
+        return this.data;
     }
 
     // ----- Buffer related ----- //
