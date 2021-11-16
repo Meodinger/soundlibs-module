@@ -18,8 +18,8 @@ import java.net.URLConnection;
 
 public abstract class RAudioFileReader extends AudioFileReader {
 
-    private int rMarkLimit;
-    private boolean rRereading;
+    private final int rMarkLimit;
+    private final boolean rRereading;
 
     protected RAudioFileReader(int rMarkLimit, boolean rRereading) {
         this.rMarkLimit = rMarkLimit;

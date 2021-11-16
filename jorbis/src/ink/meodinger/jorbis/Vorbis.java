@@ -1,5 +1,7 @@
 package ink.meodinger.jorbis;
 
+import ink.meodinger.jogg.Packet;
+
 /**
  * Author: Meodinger
  * Date: 2021/11/2
@@ -7,6 +9,8 @@ package ink.meodinger.jorbis;
  */
 
 public final class Vorbis {
+
+    private Vorbis() {}
 
     public static final byte[] VORBIS = "vorbis".getBytes();
     public static final byte[] VENDOR = "Meodinger Jorbis I 20220101".getBytes();
@@ -26,5 +30,19 @@ public final class Vorbis {
     public static final int E_BAD_PACKET = -136;
     public static final int E_BAD_LINK   = -137;
     public static final int E_NOS_EEK    = -138;
+
+    public char[] version() {
+        return null;
+    }
+
+    public int vorbis_bitrate_addblock(Block block) {
+        return 0;
+    }
+    public int vorbis_bitrate_flushpacket(DSP dsp, Packet packet) {
+        return 0;
+    }
+    public int synthesis_idheader(Packet packet) {
+        return 0;
+    }
 
 }
