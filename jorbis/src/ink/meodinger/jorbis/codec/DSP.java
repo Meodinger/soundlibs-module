@@ -90,5 +90,4 @@ public class DSP {
         return 0;
     }
 
-    public int synthesis
 }

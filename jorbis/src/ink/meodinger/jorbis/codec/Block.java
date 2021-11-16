@@ -2,6 +2,7 @@ package ink.meodinger.jorbis.codec;
 
 import ink.meodinger.jogg.Buffer;
 import ink.meodinger.jogg.Packet;
+import ink.meodinger.jorbis.codec.internal.AllocChain;
 import ink.meodinger.jorbis.codec.internal.BlockInternal;
 
 /**

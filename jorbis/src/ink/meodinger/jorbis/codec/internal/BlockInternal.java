@@ -1,7 +1,7 @@
 package ink.meodinger.jorbis.codec.internal;
 
 import ink.meodinger.jogg.Buffer;
-import ink.meodinger.jorbis.Vorbis;
+
 
 /**
  * Author: Meodinger
@@ -17,5 +17,5 @@ public class BlockInternal {
     private float ampMax;
     private int blockType;
 
-    private Buffer[][] packetBlob = new Buffer[][PACKET_BLOBS];
+    private Buffer[][] packetBlob; // = new Buffer[][PACKET_BLOBS];
 }

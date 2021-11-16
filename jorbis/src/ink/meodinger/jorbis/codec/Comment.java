@@ -33,11 +33,11 @@ public class Comment {
     }
 
     public char[] query(final char[] tag, final int count) {
-
+        return null;
     }
 
     public int queryCount(final char[] tag) {
-
+        return 0;
     }
 
     public int headerOut(Packet packet) {

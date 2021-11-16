@@ -1,6 +1,7 @@
-package ink.meodinger.jorbis;
+package ink.meodinger.jorbis.codec;
 
 import ink.meodinger.jogg.Packet;
+
 
 /**
  * Author: Meodinger
@@ -8,16 +9,16 @@ import ink.meodinger.jogg.Packet;
  * Have fun with my code!
  */
 
-public final class Vorbis {
+public final class _CODEC_ {
 
-    private Vorbis() {}
+    private _CODEC_() {}
 
-    public static final byte[] VORBIS = "vorbis".getBytes();
-    public static final byte[] VENDOR = "Meodinger Jorbis I 20220101".getBytes();
+    public static final byte[] VORBIS    = "vorbis".getBytes();
+    public static final byte[] VENDOR    = "Meodinger Jorbis I 20220101".getBytes();
 
-    public static final int FALSE = -1;
-    public static final int EOF   = -2;
-    public static final int HOLE  = -3;
+    public static final int FALSE        = -1;
+    public static final int EOF          = -2;
+    public static final int HOLE         = -3;
 
     public static final int E_READ       = -128;
     public static final int E_FAULT      = -129;
