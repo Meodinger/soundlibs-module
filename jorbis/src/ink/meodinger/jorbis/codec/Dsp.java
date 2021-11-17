@@ -9,7 +9,7 @@ import ink.meodinger.jorbis.codec.internal.DSPBackend;
  * Have fun with my code!
  */
 
-public class DSP {
+public class Dsp {
 
     private int analysis = 0;
     private Info info = null;

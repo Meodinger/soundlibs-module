@@ -8,4 +8,6 @@ module jorbis {
     exports ink.meodinger.jogg;
     exports ink.meodinger.jorbis;
     exports ink.meodinger.jorbis.codec;
+    exports ink.meodinger.jorbis.venc;
+    exports ink.meodinger.jorbis.vfile;
 }

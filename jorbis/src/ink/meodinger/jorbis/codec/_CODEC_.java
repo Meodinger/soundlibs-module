@@ -39,7 +39,7 @@ public final class _CODEC_ {
     public int vorbis_bitrate_addblock(Block block) {
         return 0;
     }
-    public int vorbis_bitrate_flushpacket(DSP dsp, Packet packet) {
+    public int vorbis_bitrate_flushpacket(Dsp dsp, Packet packet) {
         return 0;
     }
     public int synthesis_idheader(Packet packet) {

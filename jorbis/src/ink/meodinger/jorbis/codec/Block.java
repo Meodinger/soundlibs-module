@@ -25,7 +25,7 @@ public class Block {
     private int eofFlag = 0;
     private long granulePos = 0;
     private long sequence = 0;
-    private DSP dsp = null;
+    private Dsp dsp = null;
 
     private long glueBits = 0;
     private long timeBits = 0;
@@ -40,7 +40,7 @@ public class Block {
 
     private BlockInternal internal;
 
-    public int init(DSP dspState) {
+    public int init(Dsp dspState) {
         this.pcm = null;
         this.opb = null;
 
