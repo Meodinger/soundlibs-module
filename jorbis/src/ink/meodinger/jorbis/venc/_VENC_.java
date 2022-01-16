@@ -10,8 +10,7 @@ import ink.meodinger.jorbis.codec.Info;
 
 public final class _VENC_ {
 
-    private _VENC_() {
-    }
+    private _VENC_() {}
 
     /**
      * Query the current encoder bitrate management setting.

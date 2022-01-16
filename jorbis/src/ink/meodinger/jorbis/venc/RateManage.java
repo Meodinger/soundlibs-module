@@ -6,10 +6,7 @@ package ink.meodinger.jorbis.venc;
  * Have fun with my code!
  */
 
-public final class RateManage {
-
-    private RateManage() {}
-
+public abstract class RateManage {
 
     /**
      * This is a deprecated interface.
@@ -22,7 +19,7 @@ public final class RateManage {
      * bitrate management configuration.
      */
     @Deprecated(since = "1.1")
-    public static class _1 {
+    public final static class _1 extends RateManage {
 
         /**
          * Nonzero if bitrate management is active
@@ -84,7 +81,7 @@ public final class RateManage {
      * in order to query and modify specifics of the encoder's
      * bitrate management configuration.
      */
-    public static class _2 {
+    public final static class _2 extends RateManage {
 
         /**
          * Nonzero if bitrate management is active

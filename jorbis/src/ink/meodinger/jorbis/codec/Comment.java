@@ -10,7 +10,7 @@ import ink.meodinger.jogg.Packet;
 
 public class Comment {
 
-    private char[][] uesrComments;
+    private char[][] userComments;
     private int[] commentLengths;
     private int commentCount;
 

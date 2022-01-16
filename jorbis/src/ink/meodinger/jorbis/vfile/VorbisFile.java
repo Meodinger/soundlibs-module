@@ -17,7 +17,7 @@ public class VorbisFile {
     private int seekable;
     private long offset;
     private long end;
-    private Sync oSync;
+    private Sync oy;
 
     // If the FILE handle isn't seekable (eg, a pipe), only the current stream appears
     private int links;
@@ -42,17 +42,18 @@ public class VorbisFile {
     /**
      * Take physical pages, weld into a logical stream of packets
      */
-    private Stream oStream;
+    private Stream os;
     /**
      * Central working state for the packet -> PCM decoder
      */
-    private Dsp vDsp;
+    private Dsp vd;
     /**
      * Local working space for packet->PCM decode
      */
-    private Block vBlock;
+    private Block vb;
 
     // callbacks
+    private Callbacks callbacks;
 
     // ----- Methods ----- //
 
@@ -63,20 +64,20 @@ public class VorbisFile {
     public int open(String path) {
         return 0;
     }
-    public int open(File file) {
+    public int open(File file, String initial, long bytes) {
         return 0;
     }
-    public int open(Object dataSource, String initial, long bytes /*, callbacks */) {
+    public int open(Object dataSource, String initial, long bytes, Callbacks callbacks) {
         return 0;
     }
 
-    public int testOpen(File file, String initial, long bytes) {
+    public int test(File file, String initial, long bytes) {
+        return 0;
+    }
+    public int testCallbacks(Object dataSource, String initial, long bytes, Callbacks callbacks) {
         return 0;
     }
     public int testOpen() {
-        return 0;
-    }
-    public int testOpen(Object dataSource, String initial, long bytes /*, callbacks*/) {
         return 0;
     }
 
@@ -115,10 +116,10 @@ public class VorbisFile {
     public int pcmSeekPage(long pos) {
         return 0;
     }
-    public int timeSeek(long pos) {
+    public int timeSeek(double pos) {
         return 0;
     }
-    public int timeSeekPage(long pos) {
+    public int timeSeekPage(double pos) {
         return 0;
     }
 
@@ -131,10 +132,10 @@ public class VorbisFile {
     public int pcmSeekPageLap(long pos) {
         return 0;
     }
-    public int timeSeekLap(long pos) {
+    public int timeSeekLap(double pos) {
         return 0;
     }
-    public int timeSeekPgeLap(long pos) {
+    public int timeSeekPgeLap(double pos) {
         return 0;
     }
 
