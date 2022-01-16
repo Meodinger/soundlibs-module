@@ -11,6 +11,11 @@ import ink.meodinger.jogg.Buffer;
 
 public class BlockInternal {
 
+    public static final int TYPE_IMPULSE = 0;
+    public static final int TYPE_PADDING = 1;
+    public static final int TYPE_TRANSITION = 0;
+    public static final int TYPE_LONG = 1;
+
     private static final int PACKET_BLOBS = 15;
 
     private float[][] pcmDelay;
