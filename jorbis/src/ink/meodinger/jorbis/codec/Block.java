@@ -80,4 +80,12 @@ public class Block {
         return 0;
     }
 
+    public void alloc(long bytes) {
+
+    }
+
+    public void ripcord() {
+
+    }
+
 }

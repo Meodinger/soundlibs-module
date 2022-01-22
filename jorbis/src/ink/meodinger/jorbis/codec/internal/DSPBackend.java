@@ -1,7 +1,5 @@
 package ink.meodinger.jorbis.codec.internal;
 
-import ink.meodinger.jorbis.Drft;
-import ink.meodinger.jorbis.Envelope;
 
 /**
  * Author: Meodinger
@@ -11,10 +9,10 @@ import ink.meodinger.jorbis.Envelope;
 
 public class DSPBackend {
 
-    private Envelope.Lookup envelope = null;
+    private Envelope envelope = null;
     private int[] window = new int[2];
     private Object[][][] transforms; //= new Object[][][2]; // vorbis_look_transform
-    private Drft.Lookup[] fftLook = new Drft.Lookup[2];
+    private Drft[] fftLook = new Drft[2];
 
     private int modeBits = 0;
     private Object[][] flr; //= new Object[][]; // vorbis_look_floor
@@ -29,5 +27,14 @@ public class DSPBackend {
     private Object bms; // bitrate_manager_state
 
     private long sampleCount;
+
+
+    public static class Drft {
+
+    }
+
+    public static class Envelope {
+
+    }
 
 }
