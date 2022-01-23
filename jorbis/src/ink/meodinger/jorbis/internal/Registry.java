@@ -1,8 +1,5 @@
 package ink.meodinger.jorbis.internal;
 
-import ink.meodinger.jorbis.FuncFloor;
-import ink.meodinger.jorbis.FuncMapping;
-import ink.meodinger.jorbis.FuncResidue;
 
 /**
  * Author: Meodinger

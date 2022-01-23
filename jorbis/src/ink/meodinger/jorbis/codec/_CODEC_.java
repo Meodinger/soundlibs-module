@@ -1,6 +1,8 @@
 package ink.meodinger.jorbis.codec;
 
 import ink.meodinger.jogg.Packet;
+import ink.meodinger.jorbis.internal.FuncMapping;
+import ink.meodinger.jorbis.internal.Registry;
 
 
 /**
