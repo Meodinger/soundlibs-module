@@ -90,4 +90,9 @@ public class Dsp {
         return 0;
     }
 
+    // Getters
+
+    public Info getInfo() {
+        return info;
+    }
 }

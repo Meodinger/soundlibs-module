@@ -1,6 +1,12 @@
 package ink.meodinger.jorbis.internal;
 
 
+import ink.meodinger.jogg.Buffer;
+import ink.meodinger.jorbis.codec.Block;
+import ink.meodinger.jorbis.codec.Dsp;
+import ink.meodinger.jorbis.codec.Info;
+import ink.meodinger.jorbis.codec.internal.InfoMode;
+
 /**
  * Author: Meodinger
  * Date: 2022/1/22
@@ -27,7 +33,11 @@ public final class Registry {
     };
 
     public static FuncMapping[] mappings = new FuncMapping[] {
-        // Mapping0
+            FuncMapping.FuncMapping0.INSTANCE
+    };
+
+    public static FuncTime[] times = new FuncTime[] {
+            FuncTime.FuncTime0.INSTANCE
     };
 
 }

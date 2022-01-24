@@ -25,4 +25,43 @@ public abstract class FuncTime {
 
     public abstract int inverse(Block vb, Object i, float[] in, float[] out);
 
+    // Impl
+
+    public static class FuncTime0 extends FuncTime {
+
+        static FuncTime0 INSTANCE = new FuncTime0();
+
+        private FuncTime0() {}
+
+        @Override
+        public void pack(Object i, Buffer opb) {
+
+        }
+
+        @Override
+        public Object unpack(Info vi, Buffer opb) {
+            return "";
+        }
+
+        @Override
+        public Object look(Dsp vd, InfoMode vm, Object i) {
+            return "";
+        }
+
+        @Override
+        public void free_info(Object i) {
+
+        }
+
+        @Override
+        public void free_look(Object i) {
+
+        }
+
+        @Override
+        public int inverse(Block vb, Object i, float[] in, float[] out) {
+            return 0;
+        }
+    }
+
 }
