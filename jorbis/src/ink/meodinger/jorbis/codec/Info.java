@@ -1,7 +1,8 @@
 package ink.meodinger.jorbis.codec;
 
 import ink.meodinger.jogg.Packet;
-import ink.meodinger.jorbis.codec.internal.CodecSetupInfo;
+import ink.meodinger.jorbis.internal.CodeBookStatic;
+
 
 /**
  * Author: Meodinger
@@ -11,19 +12,44 @@ import ink.meodinger.jorbis.codec.internal.CodecSetupInfo;
 
 public class Info {
 
-    private int version;
-    private int channels;
-    private long rate;
+    private int  version  = 0;
+    private int  channels = 0;
+    private long rate     = 0;
 
-    private long bitrateUpper;
-    private long bitrateNominal;
-    private long bitrateLower;
-    private long bitrateWindow;
+    private long bitrateUpper   = 0;
+    private long bitrateNominal = 0;
+    private long bitrateLower   = 0;
+    private long bitrateWindow  = 0;
 
-    private CodecSetupInfo codecSetupInfo;
+    int[] blockSizes = new int[2];
+
+    int modes = 0;
+    InfoMode[] modeParam = null;
+
+    int floors = 0;
+    int[] floorType = null;
+    Object[] floorParam = null;
+
+    int maps = 0;
+    int[] mapType = null;
+    Object[] mapParam = null;
+
+    int residues = 0;
+    int[] residueType = null;
+    Object[] residueParam = null;
+
+    int times = 0;
+    int[] timeType = null;
+    Object[] timeParam = null;
+
+    int books = 0;
+    CodeBookStatic[] bookParam = null; // CodeBook
+
+    int psys = 0; // encode only
+    Object[] psyParam = null; // PsyInfo
 
     public void init() {
-
+        rate = 0;
     }
 
     public void clear() {

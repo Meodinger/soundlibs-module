@@ -1,4 +1,4 @@
-package ink.meodinger.jorbis.codec.internal;
+package ink.meodinger.jorbis.codec;
 
 /**
  * Author: Meodinger

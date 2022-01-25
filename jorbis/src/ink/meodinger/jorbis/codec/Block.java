@@ -2,8 +2,7 @@ package ink.meodinger.jorbis.codec;
 
 import ink.meodinger.jogg.Buffer;
 import ink.meodinger.jogg.Packet;
-import ink.meodinger.jorbis.codec.internal.AllocChain;
-import ink.meodinger.jorbis.codec.internal.BlockInternal;
+
 
 /**
  * Author: Meodinger
@@ -27,22 +26,14 @@ public class Block {
     private long sequence = 0;
     private Dsp dsp = null;
 
-    private long glueBits = 0;
-    private long timeBits = 0;
-    private long floorBits = 0;
+    private long glueBits    = 0;
+    private long timeBits    = 0;
+    private long floorBits   = 0;
     private long residueBits = 0;
 
-    private Object[] localStore;
-    private long localTop;
-    private long localAlloc;
-    private long totalUes;
-    private AllocChain[] reap;
-
-    private BlockInternal internal;
-
-    public int init(Dsp dspState) {
-        this.pcm = null;
-        this.opb = null;
+    public int init(Dsp dsp) {
+        this.pcm = new float[0][];
+        this.opb = new Buffer();
 
         this.lW = 0;
         this.W = 0;
@@ -53,7 +44,7 @@ public class Block {
         this.eofFlag = 0;
         this.granulePos = 0;
         this.sequence = 0;
-        this.dsp = dspState;
+        this.dsp = dsp;
 
         this.glueBits = 0;
         this.timeBits = 0;

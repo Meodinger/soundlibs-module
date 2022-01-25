@@ -4,7 +4,7 @@ import ink.meodinger.jogg.Buffer;
 import ink.meodinger.jorbis.codec.Block;
 import ink.meodinger.jorbis.codec.Dsp;
 import ink.meodinger.jorbis.codec.Info;
-import ink.meodinger.jorbis.codec.internal.InfoMode;
+import ink.meodinger.jorbis.codec.InfoMode;
 
 /**
  * Author: Meodinger
@@ -62,7 +62,7 @@ public abstract class FuncMapping {
                 int floorNum   = info.floorSubMap[i];
                 int residueNum = info.residueSubMap[i];
 
-                look.timeFunc[i] = Registry.times[vi]; // FIXME
+                // look.timeFunc[i] = Registry.times[vi]; // FIXME
             }
 
 

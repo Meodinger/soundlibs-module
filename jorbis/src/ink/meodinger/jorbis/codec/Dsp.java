@@ -1,7 +1,7 @@
 package ink.meodinger.jorbis.codec;
 
 import ink.meodinger.jogg.Packet;
-import ink.meodinger.jorbis.codec.internal.DSPBackend;
+import ink.meodinger.jorbis.internal.CodeBook;
 
 /**
  * Author: Meodinger
@@ -11,32 +11,41 @@ import ink.meodinger.jorbis.codec.internal.DSPBackend;
 
 public class Dsp {
 
-    private int analysis = 0;
+    private int analysisPointer = 0;
     private Info info = null;
+    private int modeBits = 0;
 
-    private float[][] pcm = null;
+    private float[][] pcm    = null;
     private float[][] pcmRet = null;
-    private int pcmStorage = 0;
-    private int pcmCurrent = 0;
-    private int pcmReturned = 0;
+    private int pcmStorage   = 0;
+    private int pcmCurrent   = 0;
+    private int pcmReturned  = 0;
 
     private int preExtraPolate = 0;
     private int eofFlag = 0;
 
-    private long lW = 0;
-    private long W = 0;
-    private long nW = 0;
+    private long lW      = 0;
+    private long W       = 0;
+    private long nW      = 0;
     private long centerW = 0;
 
     private long granulePos = 0;
     private long sequence = 0;
 
-    private long glueBits = 0;
-    private long timeBits = 0;
-    private long floorBits = 0;
+    private long glueBits    = 0;
+    private long timeBits    = 0;
+    private long floorBits   = 0;
     private long residueBits = 0;
 
-    private DSPBackend backend = null;
+    private float[][][][][] window    = null; // block, leadin, leadout, type
+    private Object[][]      transform = null;
+    private CodeBook[]      fullBooks = null;
+    private Object[]        mode      = null;
+
+    private byte[] header  = null;
+    private byte[] header1 = null;
+    private byte[] header2 = null;
+
 
     public void clear() {
 
