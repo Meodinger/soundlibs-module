@@ -12,14 +12,14 @@ import ink.meodinger.jorbis.internal.CodeBookStatic;
 
 public class Info {
 
-    private int  version  = 0;
-    private int  channels = 0;
-    private long rate     = 0;
+    int  version  = 0;
+    int  channels = 0;
+    long rate     = 0;
 
-    private long bitrateUpper   = 0;
-    private long bitrateNominal = 0;
-    private long bitrateLower   = 0;
-    private long bitrateWindow  = 0;
+    long bitrateUpper   = 0;
+    long bitrateNominal = 0;
+    long bitrateLower   = 0;
+    long bitrateWindow  = 0;
 
     int[] blockSizes = new int[2];
 

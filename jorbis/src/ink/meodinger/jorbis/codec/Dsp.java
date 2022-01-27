@@ -11,36 +11,36 @@ import ink.meodinger.jorbis.internal.CodeBook;
 
 public class Dsp {
 
-    private int analysisPointer = 0;
-    private Info info = null;
-    private int modeBits = 0;
+    int analysisPointer = 0;
+    Info info = null;
+    int modeBits = 0;
 
-    private float[][] pcm    = null;
-    private float[][] pcmRet = null;
-    private int pcmStorage   = 0;
-    private int pcmCurrent   = 0;
-    private int pcmReturned  = 0;
+    float[][] pcm    = null;
+    float[][] pcmRet = null;
+    int pcmStorage   = 0;
+    int pcmCurrent   = 0;
+    int pcmReturned  = 0;
 
-    private int preExtraPolate = 0;
-    private int eofFlag = 0;
+    int preExtraPolate = 0;
+    int eofFlag = 0;
 
-    private long lW      = 0;
-    private long W       = 0;
-    private long nW      = 0;
-    private long centerW = 0;
+    long lW      = 0;
+    long W       = 0;
+    long nW      = 0;
+    long centerW = 0;
 
-    private long granulePos = 0;
-    private long sequence = 0;
+    long granulePos = 0;
+    long sequence = 0;
 
-    private long glueBits    = 0;
-    private long timeBits    = 0;
-    private long floorBits   = 0;
-    private long residueBits = 0;
+    long glueBits    = 0;
+    long timeBits    = 0;
+    long floorBits   = 0;
+    long residueBits = 0;
 
-    private float[][][][][] window    = null; // block, leadin, leadout, type
-    private Object[][]      transform = null;
-    private CodeBook[]      fullBooks = null;
-    private Object[]        mode      = null;
+    float[][][][][] window    = null; // block, leadin, leadout, type
+    Object[][]      transform = null;
+    CodeBook[]      fullBooks = null;
+    Object[]        mode      = null;
 
     private byte[] header  = null;
     private byte[] header1 = null;

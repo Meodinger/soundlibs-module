@@ -8,9 +8,9 @@ package ink.meodinger.jorbis.codec;
 
 public class InfoMode {
 
-    private int blockFlag;
-    private int windowType;
-    private int transformType;
-    private int mapping;
+    int blockFlag;
+    int windowType;
+    int transformType;
+    int mapping;
 
 }

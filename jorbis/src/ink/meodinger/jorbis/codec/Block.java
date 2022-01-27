@@ -12,45 +12,34 @@ import ink.meodinger.jogg.Packet;
 
 public class Block {
 
-    private float[][] pcm = null;
-    private Buffer opb = null;
+    float[][] pcm = new float[0][];
+    Buffer opb = new Buffer();
 
-    private long lW = 0;
-    private long W = 0;
-    private long nW = 0;
-    private int pcmEnd = 0;
-    private int mode = 0;
+    long lW = 0;
+    long W  = 0;
+    long nW = 0;
+    int pcmEnd = 0;
+    int mode = 0;
 
-    private int eofFlag = 0;
-    private long granulePos = 0;
-    private long sequence = 0;
-    private Dsp dsp = null;
+    int eofFlag = 0;
+    long granulePos = 0;
+    long sequence = 0;
+    Dsp dsp = null;
 
-    private long glueBits    = 0;
-    private long timeBits    = 0;
-    private long floorBits   = 0;
-    private long residueBits = 0;
+    long glueBits    = 0;
+    long timeBits    = 0;
+    long floorBits   = 0;
+    long residueBits = 0;
+
+    public Block(Dsp dsp) {
+        this.dsp = dsp;
+        if (dsp.analysisPointer != 0) {
+            opb.writeInit();
+        }
+    }
 
     public int init(Dsp dsp) {
-        this.pcm = new float[0][];
-        this.opb = new Buffer();
-
-        this.lW = 0;
-        this.W = 0;
-        this.nW = 0;
-        this.pcmEnd = 0;
-        this.mode = 0;
-
-        this.eofFlag = 0;
-        this.granulePos = 0;
-        this.sequence = 0;
         this.dsp = dsp;
-
-        this.glueBits = 0;
-        this.timeBits = 0;
-        this.floorBits = 0;
-        this.residueBits = 0;
-
         // todo
         return 0;
     }

@@ -10,11 +10,11 @@ import ink.meodinger.jogg.Packet;
 
 public class Comment {
 
-    private byte[]   vendor         = null;
+    byte[]   vendor         = null;
 
-    private char[][] userComments   = null;
-    private int[]    commentLengths = null;
-    private int      commentCount   = 0;
+    char[][] userComments   = null;
+    int[]    commentLengths = null;
+    int      commentCount   = 0;
 
     public void init() {
 
